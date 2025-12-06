@@ -1,8 +1,10 @@
-package main
+package main_test
 
 import (
 	"strings"
 	"testing"
+
+	main "github.com/cppcho/slack2md/cmd/slack2md"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -11,7 +13,7 @@ func TestLoadConfig(t *testing.T) {
 		setup    func(t *testing.T)
 		wantErr  bool
 		errMsg   string
-		validate func(t *testing.T, config *Config)
+		validate func(t *testing.T, config *main.Config)
 	}{
 		{
 			name: "valid config with all required fields",
@@ -20,7 +22,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack-export")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				if config.BotToken != "xoxb-test-token" {
 					t.Errorf("BotToken = %q, want %q", config.BotToken, "xoxb-test-token")
 				}
@@ -43,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack-export")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				if config.AppToken != "xapp-test-token" {
 					t.Errorf("AppToken = %q, want %q", config.AppToken, "xapp-test-token")
 				}
@@ -91,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_CHANNEL_IDS", "C1234567890")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				if len(config.ChannelIDs) != 1 {
 					t.Errorf("expected 1 channel ID, got %d", len(config.ChannelIDs))
 					return
@@ -109,7 +111,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_CHANNEL_IDS", "C1234567890,C0987654321,C1111111111")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				expected := []string{"C1234567890", "C0987654321", "C1111111111"}
 				if len(config.ChannelIDs) != len(expected) {
 					t.Errorf("expected %d channel IDs, got %d", len(expected), len(config.ChannelIDs))
@@ -130,7 +132,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_CHANNEL_IDS", " C1234567890 , C0987654321 , C1111111111 ")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				expected := []string{"C1234567890", "C0987654321", "C1111111111"}
 				if len(config.ChannelIDs) != len(expected) {
 					t.Errorf("expected %d channel IDs, got %d", len(expected), len(config.ChannelIDs))
@@ -151,7 +153,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_CHANNEL_IDS", "C1234567890,C0987654321,")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				expected := []string{"C1234567890", "C0987654321"}
 				if len(config.ChannelIDs) != len(expected) {
 					t.Errorf("expected %d channel IDs, got %d", len(expected), len(config.ChannelIDs))
@@ -172,7 +174,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_CHANNEL_IDS", ",C1234567890,C0987654321")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				expected := []string{"C1234567890", "C0987654321"}
 				if len(config.ChannelIDs) != len(expected) {
 					t.Errorf("expected %d channel IDs, got %d", len(expected), len(config.ChannelIDs))
@@ -193,7 +195,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_CHANNEL_IDS", "C1234567890,,,C0987654321")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				expected := []string{"C1234567890", "C0987654321"}
 				if len(config.ChannelIDs) != len(expected) {
 					t.Errorf("expected %d channel IDs, got %d", len(expected), len(config.ChannelIDs))
@@ -214,7 +216,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_CHANNEL_IDS", "")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				if len(config.ChannelIDs) != 0 {
 					t.Errorf("expected empty ChannelIDs for auto-discovery, got %v", config.ChannelIDs)
 				}
@@ -227,7 +229,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack export/my files")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				if config.ExportPath != "/tmp/slack export/my files" {
 					t.Errorf("ExportPath = %q, want %q", config.ExportPath, "/tmp/slack export/my files")
 				}
@@ -240,7 +242,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack-export_2024@home")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				if config.ExportPath != "/tmp/slack-export_2024@home" {
 					t.Errorf("ExportPath = %q, want %q", config.ExportPath, "/tmp/slack-export_2024@home")
 				}
@@ -253,7 +255,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack-export")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				expected := "xoxb-1234567890-test-token"
 				if config.BotToken != expected {
 					t.Errorf("BotToken = %q, want %q", config.BotToken, expected)
@@ -268,7 +270,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack-export")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				expected := "xapp-1-A1234567890-test-token"
 				if config.AppToken != expected {
 					t.Errorf("AppToken = %q, want %q", config.AppToken, expected)
@@ -282,7 +284,7 @@ func TestLoadConfig(t *testing.T) {
 				t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack-export")
 			},
 			wantErr: false,
-			validate: func(t *testing.T, config *Config) {
+			validate: func(t *testing.T, config *main.Config) {
 				if config.DaysBack != 7 {
 					t.Errorf("DaysBack = %d, want 7 (default)", config.DaysBack)
 				}
@@ -296,23 +298,23 @@ func TestLoadConfig(t *testing.T) {
 			tt.setup(t)
 
 			// Call LoadConfig
-			config, err := LoadConfig()
+			config, err := main.LoadConfig()
 
 			// Check error expectations
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("LoadConfig() expected error, got nil")
+					t.Errorf("main.LoadConfig() expected error, got nil")
 					return
 				}
 				if tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
-					t.Errorf("LoadConfig() error = %q, want error containing %q", err.Error(), tt.errMsg)
+					t.Errorf("main.LoadConfig() error = %q, want error containing %q", err.Error(), tt.errMsg)
 				}
 				return
 			}
 
 			// No error expected
 			if err != nil {
-				t.Errorf("LoadConfig() unexpected error: %v", err)
+				t.Errorf("main.LoadConfig() unexpected error: %v", err)
 				return
 			}
 
@@ -329,12 +331,12 @@ func TestLoadConfig_NilPointerSafety(t *testing.T) {
 	t.Setenv("SLACK_BOT_TOKEN", "xoxb-test-token")
 	t.Setenv("SLACK_EXPORT_PATH", "/tmp/slack-export")
 
-	config, err := LoadConfig()
+	config, err := main.LoadConfig()
 	if err != nil {
-		t.Fatalf("LoadConfig() unexpected error: %v", err)
+		t.Fatalf("main.LoadConfig() unexpected error: %v", err)
 	}
 
 	if config == nil {
-		t.Fatal("LoadConfig() returned nil config pointer")
+		t.Fatal("main.LoadConfig() returned nil config pointer")
 	}
 }

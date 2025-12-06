@@ -130,7 +130,7 @@ func processChannel(client *slack.Client, channelID string, startTime, endTime t
 	for date, messages := range messagesByDate {
 		var fwMessages []filewriter.Message
 		for _, msg := range messages {
-			fwMessages = append(fwMessages, convertMessage(msg))
+			fwMessages = append(fwMessages, ConvertMessage(msg))
 		}
 		filewriterMessages[date] = fwMessages
 	}
@@ -145,7 +145,7 @@ func processChannel(client *slack.Client, channelID string, startTime, endTime t
 }
 
 // convertMessage converts slack.Message to filewriter.Message
-func convertMessage(msg slack.Message) filewriter.Message {
+func ConvertMessage(msg slack.Message) filewriter.Message {
 	fwMsg := filewriter.Message{
 		Timestamp: msg.Timestamp,
 		ThreadTS:  msg.ThreadTS,
@@ -157,7 +157,7 @@ func convertMessage(msg slack.Message) filewriter.Message {
 	if len(msg.Replies) > 0 {
 		fwMsg.Replies = make([]filewriter.Message, len(msg.Replies))
 		for i, reply := range msg.Replies {
-			fwMsg.Replies[i] = convertMessage(reply)
+			fwMsg.Replies[i] = ConvertMessage(reply)
 		}
 	}
 

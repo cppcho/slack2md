@@ -1,4 +1,4 @@
-package filewriter
+package filewriter_test
 
 import (
 	"os"
@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/cppcho/slack2md/internal/filewriter"
 )
 
 // TestIsSameDay tests the isSameDay function
@@ -86,9 +88,9 @@ func TestIsSameDay(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := isSameDay(tt.t1, tt.t2)
+			result := filewriter.IsSameDay(tt.t1, tt.t2)
 			if result != tt.expected {
-				t.Errorf("isSameDay(%v, %v) = %v, want %v", tt.t1, tt.t2, result, tt.expected)
+				t.Errorf("filewriter.IsSameDay(%v, %v) = %v, want %v", tt.t1, tt.t2, result, tt.expected)
 			}
 		})
 	}
@@ -205,7 +207,7 @@ func TestSanitizeChannelName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := SanitizeChannelName(tt.input)
+			result := filewriter.SanitizeChannelName(tt.input)
 			if result != tt.expected {
 				t.Errorf("SanitizeChannelName(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
@@ -273,16 +275,16 @@ func TestSortDates(t *testing.T) {
 			input := make([]string, len(tt.input))
 			copy(input, tt.input)
 
-			sortDates(input)
+			filewriter.SortDates(input)
 
 			if len(input) != len(tt.expected) {
-				t.Errorf("sortDates() result length = %d, want %d", len(input), len(tt.expected))
+				t.Errorf("filewriter.SortDates() result length = %d, want %d", len(input), len(tt.expected))
 				return
 			}
 
 			for i := range input {
 				if input[i] != tt.expected[i] {
-					t.Errorf("sortDates() result[%d] = %q, want %q", i, input[i], tt.expected[i])
+					t.Errorf("filewriter.SortDates() result[%d] = %q, want %q", i, input[i], tt.expected[i])
 				}
 			}
 		})
@@ -293,12 +295,12 @@ func TestSortDates(t *testing.T) {
 func TestGetSortedDates(t *testing.T) {
 	tests := []struct {
 		name     string
-		input    map[string][]Message
+		input    map[string][]filewriter.Message
 		expected []string
 	}{
 		{
 			name: "multiple dates unsorted",
-			input: map[string][]Message{
+			input: map[string][]filewriter.Message{
 				"2024-01-17": {},
 				"2024-01-15": {},
 				"2024-01-16": {},
@@ -307,19 +309,19 @@ func TestGetSortedDates(t *testing.T) {
 		},
 		{
 			name:     "empty map",
-			input:    map[string][]Message{},
+			input:    map[string][]filewriter.Message{},
 			expected: []string{},
 		},
 		{
 			name: "single date",
-			input: map[string][]Message{
+			input: map[string][]filewriter.Message{
 				"2024-01-15": {},
 			},
 			expected: []string{"2024-01-15"},
 		},
 		{
 			name: "dates across months",
-			input: map[string][]Message{
+			input: map[string][]filewriter.Message{
 				"2024-03-10": {},
 				"2024-01-25": {},
 				"2024-02-14": {},
@@ -330,16 +332,16 @@ func TestGetSortedDates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := getSortedDates(tt.input)
+			result := filewriter.GetSortedDates(tt.input)
 
 			if len(result) != len(tt.expected) {
-				t.Errorf("getSortedDates() length = %d, want %d", len(result), len(tt.expected))
+				t.Errorf("filewriter.GetSortedDates() length = %d, want %d", len(result), len(tt.expected))
 				return
 			}
 
 			for i := range result {
 				if result[i] != tt.expected[i] {
-					t.Errorf("getSortedDates() result[%d] = %q, want %q", i, result[i], tt.expected[i])
+					t.Errorf("filewriter.GetSortedDates() result[%d] = %q, want %q", i, result[i], tt.expected[i])
 				}
 			}
 		})
@@ -354,7 +356,7 @@ func TestWriteMarkdownFile(t *testing.T) {
 	tests := []struct {
 		name         string
 		filePath     string
-		messages     []Message
+		messages     []filewriter.Message
 		date         string
 		parentDate   time.Time
 		wantErr      bool
@@ -363,7 +365,7 @@ func TestWriteMarkdownFile(t *testing.T) {
 		{
 			name:     "single message",
 			filePath: filepath.Join(tmpDir, "test1", "2024-01-15.md"),
-			messages: []Message{
+			messages: []filewriter.Message{
 				{
 					Timestamp:       time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
 					Text:            "Hello world",
@@ -388,13 +390,13 @@ func TestWriteMarkdownFile(t *testing.T) {
 		{
 			name:     "message with thread replies same day",
 			filePath: filepath.Join(tmpDir, "test2", "2024-01-15.md"),
-			messages: []Message{
+			messages: []filewriter.Message{
 				{
 					Timestamp:       time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC),
 					Text:            "Parent message",
 					UserDisplayName: "User1",
 					IsParent:        true,
-					Replies: []Message{
+					Replies: []filewriter.Message{
 						{
 							Timestamp:       time.Date(2024, 1, 15, 10, 35, 0, 0, time.UTC),
 							Text:            "Reply 1",
@@ -424,13 +426,13 @@ func TestWriteMarkdownFile(t *testing.T) {
 		{
 			name:     "message with thread reply different day",
 			filePath: filepath.Join(tmpDir, "test3", "2024-01-15.md"),
-			messages: []Message{
+			messages: []filewriter.Message{
 				{
 					Timestamp:       time.Date(2024, 1, 15, 23, 55, 0, 0, time.UTC),
 					Text:            "Late night message",
 					UserDisplayName: "User1",
 					IsParent:        true,
-					Replies: []Message{
+					Replies: []filewriter.Message{
 						{
 							Timestamp:       time.Date(2024, 1, 16, 0, 5, 0, 0, time.UTC),
 							Text:            "Next day reply",
@@ -454,7 +456,7 @@ func TestWriteMarkdownFile(t *testing.T) {
 		{
 			name:     "multiple messages",
 			filePath: filepath.Join(tmpDir, "test4", "2024-01-15.md"),
-			messages: []Message{
+			messages: []filewriter.Message{
 				{
 					Timestamp:       time.Date(2024, 1, 15, 9, 0, 0, 0, time.UTC),
 					Text:            "First message",
@@ -487,7 +489,7 @@ func TestWriteMarkdownFile(t *testing.T) {
 		{
 			name:       "empty messages",
 			filePath:   filepath.Join(tmpDir, "test5", "2024-01-15.md"),
-			messages:   []Message{},
+			messages:   []filewriter.Message{},
 			date:       "2024-01-15",
 			parentDate: time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC),
 			wantErr:    false,
@@ -501,7 +503,7 @@ func TestWriteMarkdownFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := WriteMarkdownFile(tt.filePath, tt.messages, tt.date, tt.parentDate)
+			err := filewriter.WriteMarkdownFile(tt.filePath, tt.messages, tt.date, tt.parentDate)
 
 			if tt.wantErr {
 				if err == nil {
@@ -531,7 +533,7 @@ func TestWriteMarkdownFile(t *testing.T) {
 func TestWriteChannelMessages(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	messagesByDate := map[string][]Message{
+	messagesByDate := map[string][]filewriter.Message{
 		"2024-01-15": {
 			{
 				Timestamp:       time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC),
@@ -548,9 +550,9 @@ func TestWriteChannelMessages(t *testing.T) {
 		},
 	}
 
-	err := WriteChannelMessages(tmpDir, "general-chat", messagesByDate)
+	err := filewriter.WriteChannelMessages(tmpDir, "general-chat", messagesByDate)
 	if err != nil {
-		t.Fatalf("WriteChannelMessages() error: %v", err)
+		t.Fatalf("filewriter.WriteChannelMessages() error: %v", err)
 	}
 
 	// Verify directory structure
@@ -586,7 +588,7 @@ func TestWriteChannelMessages(t *testing.T) {
 func TestWriteChannelMessages_SanitizesName(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	messagesByDate := map[string][]Message{
+	messagesByDate := map[string][]filewriter.Message{
 		"2024-01-15": {
 			{
 				Timestamp:       time.Date(2024, 1, 15, 10, 0, 0, 0, time.UTC),
@@ -597,9 +599,9 @@ func TestWriteChannelMessages_SanitizesName(t *testing.T) {
 	}
 
 	// Use a channel name with special characters
-	err := WriteChannelMessages(tmpDir, "team@work!channel", messagesByDate)
+	err := filewriter.WriteChannelMessages(tmpDir, "team@work!channel", messagesByDate)
 	if err != nil {
-		t.Fatalf("WriteChannelMessages() error: %v", err)
+		t.Fatalf("filewriter.WriteChannelMessages() error: %v", err)
 	}
 
 	// Verify sanitized directory name

@@ -1,9 +1,10 @@
-package main
+package main_test
 
 import (
 	"testing"
 	"time"
 
+	main "github.com/cppcho/slack2md/cmd/slack2md"
 	"github.com/cppcho/slack2md/internal/filewriter"
 	"github.com/cppcho/slack2md/internal/slack"
 )
@@ -296,10 +297,10 @@ func TestConvertMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := convertMessage(tt.input)
+			result := main.ConvertMessage(tt.input)
 
 			if !messagesEqual(result, tt.expected) {
-				t.Errorf("convertMessage() failed\ngot:  %+v\nwant: %+v", result, tt.expected)
+				t.Errorf("main.ConvertMessage() failed\ngot:  %+v\nwant: %+v", result, tt.expected)
 			}
 		})
 	}

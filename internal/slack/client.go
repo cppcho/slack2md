@@ -32,8 +32,8 @@ type Channel struct {
 	Name string
 }
 
-// GetChannelName fetches the channel name for a given channel ID
-func (c *Client) GetChannelName(channelID string) (string, error) {
+// getChannelName fetches the channel name for a given channel ID
+func (c *Client) getChannelName(channelID string) (string, error) {
 	// Use conversations.info API to get channel information
 	channel, err := c.api.GetConversationInfo(&slack.GetConversationInfoInput{
 		ChannelID: channelID,
@@ -82,8 +82,8 @@ func (c *Client) FetchAllChannels() ([]Channel, error) {
 	return allChannels, nil
 }
 
-// GetUserDisplayName fetches the display name for a given user ID
-func (c *Client) GetUserDisplayName(userID string) string {
+// getUserDisplayName fetches the display name for a given user ID
+func (c *Client) getUserDisplayName(userID string) string {
 	// Handle bot users and empty user IDs
 	if userID == "" {
 		return "Unknown"

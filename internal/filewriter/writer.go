@@ -19,8 +19,8 @@ type Message struct {
 	IsParent        bool
 }
 
-// WriteMarkdownFile writes messages to a markdown file for a specific date
-func WriteMarkdownFile(filePath string, messages []Message, date string, parentDate time.Time) error {
+// writeMarkdownFile writes messages to a markdown file for a specific date
+func writeMarkdownFile(filePath string, messages []Message, date string, parentDate time.Time) error {
 	// Create directory if it doesn't exist
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -91,8 +91,8 @@ func isSameDay(t1, t2 time.Time) bool {
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
 
-// SanitizeChannelName sanitizes a channel name for use as a directory name
-func SanitizeChannelName(name string) string {
+// sanitizeChannelName sanitizes a channel name for use as a directory name
+func sanitizeChannelName(name string) string {
 	// Replace any character that's not alphanumeric, hyphen, or underscore with underscore
 	re := regexp.MustCompile(`[^a-zA-Z0-9\-_]`)
 	return re.ReplaceAllString(name, "_")
@@ -101,7 +101,7 @@ func SanitizeChannelName(name string) string {
 // WriteChannelMessages writes all messages for a channel, organized by date
 func WriteChannelMessages(exportPath, channelName string, messagesByDate map[string][]Message) error {
 	// Sanitize channel name
-	sanitizedName := SanitizeChannelName(channelName)
+	sanitizedName := sanitizeChannelName(channelName)
 
 	// Create channel directory
 	channelDir := filepath.Join(exportPath, sanitizedName)
@@ -128,7 +128,7 @@ func WriteChannelMessages(exportPath, channelName string, messagesByDate map[str
 			return fmt.Errorf("failed to parse date %s: %w", date, err)
 		}
 
-		if err := WriteMarkdownFile(filePath, messages, date, parentDate); err != nil {
+		if err := writeMarkdownFile(filePath, messages, date, parentDate); err != nil {
 			return fmt.Errorf("failed to write file for date %s: %w", date, err)
 		}
 	}

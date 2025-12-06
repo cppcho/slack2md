@@ -173,7 +173,7 @@ func TestGetChannelName(t *testing.T) {
 			tt.mockSetup(mock)
 			client := NewClientWithAPI(mock)
 
-			name, err := client.GetChannelName(tt.channelID)
+			name, err := client.getChannelName(tt.channelID)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetChannelName() error = %v, wantErr %v", err, tt.wantErr)
@@ -592,7 +592,7 @@ func TestGetUserDisplayName(t *testing.T) {
 			tt.mockSetup(mock)
 			client := NewClientWithAPI(mock)
 
-			result := client.GetUserDisplayName(tt.userID)
+			result := client.getUserDisplayName(tt.userID)
 
 			if result != tt.want {
 				t.Errorf("GetUserDisplayName() = %q, want %q", result, tt.want)
@@ -603,11 +603,11 @@ func TestGetUserDisplayName(t *testing.T) {
 
 func TestNewClient(t *testing.T) {
 	tests := []struct {
-		name            string
-		botToken        string
-		appLevelToken   string
-		expectNonNil    bool
-		expectAPISet    bool
+		name          string
+		botToken      string
+		appLevelToken string
+		expectNonNil  bool
+		expectAPISet  bool
 	}{
 		{
 			name:          "NewClient with both tokens",

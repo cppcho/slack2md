@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// ConvertSlackToMarkdown converts Slack's mrkdwn format to standard Markdown
-func ConvertSlackToMarkdown(text string) string {
+// convertSlackToMarkdown converts Slack's mrkdwn format to standard Markdown
+func convertSlackToMarkdown(text string) string {
 	// First, decode HTML entities (&gt; → >, &lt; → <, &amp; → &, etc.)
 	text = html.UnescapeString(text)
 

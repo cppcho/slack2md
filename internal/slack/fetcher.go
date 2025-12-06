@@ -27,7 +27,7 @@ type FetchResult struct {
 // FetchChannelMessages fetches all messages from a channel within the specified time range
 func (c *Client) FetchChannelMessages(channelID string, startTime, endTime time.Time) (*FetchResult, error) {
 	// Get channel name
-	channelName, err := c.GetChannelName(channelID)
+	channelName, err := c.getChannelName(channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,12 +66,12 @@ func (c *Client) FetchChannelMessages(channelID string, startTime, endTime time.
 			}
 
 			// Get user display name
-			displayName := c.GetUserDisplayName(msg.User)
+			displayName := c.getUserDisplayName(msg.User)
 
 			message := Message{
 				Timestamp:       ts,
 				ThreadTS:        msg.ThreadTimestamp,
-				Text:            ConvertSlackToMarkdown(msg.Text),
+				Text:            convertSlackToMarkdown(msg.Text),
 				UserDisplayName: displayName,
 				IsParent:        msg.ReplyCount > 0,
 			}
@@ -136,12 +136,12 @@ func (c *Client) fetchThreadReplies(channelID, threadTS string) ([]Message, erro
 		}
 
 		// Get user display name
-		displayName := c.GetUserDisplayName(msg.User)
+		displayName := c.getUserDisplayName(msg.User)
 
 		reply := Message{
 			Timestamp:       ts,
 			ThreadTS:        msg.ThreadTimestamp,
-			Text:            ConvertSlackToMarkdown(msg.Text),
+			Text:            convertSlackToMarkdown(msg.Text),
 			UserDisplayName: displayName,
 		}
 

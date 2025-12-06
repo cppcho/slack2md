@@ -1,4 +1,4 @@
-package common
+package common_test
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/cppcho/slack2md/internal/common"
 )
 
 // captureStdout captures stdout during function execution
@@ -85,7 +87,7 @@ func TestPrintBanner(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output := captureStdout(func() {
-				PrintBanner(tt.toolName)
+				common.PrintBanner(tt.toolName)
 			})
 
 			// Verify newline is present
@@ -169,7 +171,7 @@ func TestSuccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output := captureStdout(func() {
-				Success(tt.message)
+				common.Success(tt.message)
 			})
 
 			if tt.validate != nil {
@@ -245,7 +247,7 @@ func TestError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			output := captureStdout(func() {
-				Error(tt.message)
+				common.Error(tt.message)
 			})
 
 			if tt.validate != nil {
@@ -265,21 +267,21 @@ func TestOutputFormatConsistency(t *testing.T) {
 		{
 			name: "PrintBanner format",
 			function: func() {
-				PrintBanner("test")
+				common.PrintBanner("test")
 			},
 			wantPrefix: "===",
 		},
 		{
 			name: "Success format",
 			function: func() {
-				Success("test")
+				common.Success("test")
 			},
 			wantPrefix: "✓",
 		},
 		{
 			name: "Error format",
 			function: func() {
-				Error("test")
+				common.Error("test")
 			},
 			wantPrefix: "✗",
 		},
@@ -303,10 +305,10 @@ func TestOutputFormatConsistency(t *testing.T) {
 // TestMultipleOutputCalls verifies functions can be called multiple times
 func TestMultipleOutputCalls(t *testing.T) {
 	output := captureStdout(func() {
-		PrintBanner("Tool Name")
-		Success("First operation")
-		Success("Second operation")
-		Error("Something went wrong")
+		common.PrintBanner("Tool Name")
+		common.Success("First operation")
+		common.Success("Second operation")
+		common.Error("Something went wrong")
 	})
 
 	expectedParts := []string{
@@ -325,16 +327,16 @@ func TestMultipleOutputCalls(t *testing.T) {
 
 // Example demonstrates the usage of output functions
 func ExamplePrintBanner() {
-	PrintBanner("slack2md")
+	common.PrintBanner("slack2md")
 	// Output: === slack2md ===
 }
 
 func ExampleSuccess() {
-	Success("Export completed successfully")
+	common.Success("Export completed successfully")
 	// Output: ✓ Export completed successfully
 }
 
 func ExampleError() {
-	Error("Failed to connect to Slack API")
+	common.Error("Failed to connect to Slack API")
 	// Output: ✗ Failed to connect to Slack API
 }
