@@ -31,7 +31,7 @@ run:
 
 test:
 	@echo "Running tests..."
-	@go test -v ./...
+	@go test -cover ./...
 
 fmt:
 	@echo "Formatting code..."
