@@ -22,13 +22,29 @@ func main() {
 	client := slack.NewClient(config.BotToken, config.AppToken)
 
 	// Auto-discover channels if not manually specified
-	if err := discoverChannels(client, config); err != nil {
+	channels, err := discoverChannels(client)
+	if err != nil {
 		common.Error(fmt.Sprintf("Channel discovery failed: %v", err))
 		os.Exit(1)
 	}
 
+	if len(config.ChannelIDs) > 0 {
+		// filter out discovered channels to only those specified
+		var filtered []slack.Channel
+		channelIDSet := make(map[string]struct{})
+		for _, id := range config.ChannelIDs {
+			channelIDSet[id] = struct{}{}
+		}
+		for _, ch := range channels {
+			if _, exists := channelIDSet[ch.ID]; exists {
+				filtered = append(filtered, ch)
+			}
+		}
+		channels = filtered
+	}
+
 	// Validate we have channels to export
-	if len(config.ChannelIDs) == 0 {
+	if len(channels) == 0 {
 		common.Error("No channels to export. Either provide SLACK_CHANNEL_IDS or ensure bot is invited to channels.")
 		os.Exit(1)
 	}
@@ -48,14 +64,14 @@ func main() {
 	failureCount := 0
 
 	// Process each channel
-	for _, channelID := range config.ChannelIDs {
-		fmt.Printf("Processing channel %s...\n", channelID)
+	for _, channel := range channels {
+		fmt.Printf("Processing channel %s...\n", channel.Name)
 
-		if err := processChannel(client, channelID, startTime, endTime, config.ExportPath); err != nil {
-			common.Error(fmt.Sprintf("Failed to process channel %s: %v", channelID, err))
+		if err := processChannel(client, channel, startTime, endTime, config.ExportPath); err != nil {
+			common.Error(fmt.Sprintf("Failed to process channel %s: %v", channel.Name, err))
 			failureCount++
 		} else {
-			common.Success(fmt.Sprintf("Successfully exported channel %s", channelID))
+			common.Success(fmt.Sprintf("Successfully exported channel %s", channel.Name))
 			successCount++
 		}
 
@@ -64,7 +80,7 @@ func main() {
 
 	// Print summary
 	fmt.Printf("\n--- Summary ---\n")
-	fmt.Printf("Total channels: %d\n", len(config.ChannelIDs))
+	fmt.Printf("Total channels: %d\n", len(channels))
 	fmt.Printf("Successful exports: %d\n", successCount)
 	fmt.Printf("Failed exports: %d\n", failureCount)
 
@@ -77,44 +93,37 @@ func main() {
 }
 
 // discoverChannels auto-discovers channels if not manually specified
-func discoverChannels(client *slack.Client, config *Config) error {
-	// Skip discovery if channels are manually provided
-	if len(config.ChannelIDs) > 0 {
-		fmt.Printf("Using %d manually specified channel(s)\n\n", len(config.ChannelIDs))
-		return nil
-	}
-
+func discoverChannels(client *slack.Client) ([]slack.Channel, error) {
 	// Auto-discover channels
 	fmt.Println("Auto-discovering channels...")
 	channels, err := client.FetchAllChannels()
 	if err != nil {
-		return fmt.Errorf("failed to fetch channels: %w", err)
+		return nil, fmt.Errorf("failed to fetch channels: %w", err)
 	}
 
 	if len(channels) == 0 {
-		return fmt.Errorf("no channels found - bot may not be invited to any channels")
+		return nil, fmt.Errorf("no channels found - bot may not be invited to any channels")
 	}
 
 	fmt.Printf("Found %d channel(s):\n", len(channels))
 	for _, ch := range channels {
 		fmt.Printf("  - %s (%s)\n", ch.Name, ch.ID)
-		config.ChannelIDs = append(config.ChannelIDs, ch.ID)
 	}
 	fmt.Println()
 
-	return nil
+	return channels, nil
 }
 
 // processChannel handles the export for a single channel
-func processChannel(client *slack.Client, channelID string, startTime, endTime time.Time, exportPath string) error {
+func processChannel(client *slack.Client, channel slack.Channel, startTime, endTime time.Time, exportPath string) error {
 	// Fetch messages from Slack
 	fmt.Printf("  Fetching messages from Slack...\n")
-	result, err := client.FetchChannelMessages(channelID, startTime, endTime)
+	result, err := client.FetchChannelMessages(channel.ID, startTime, endTime)
 	if err != nil {
 		return fmt.Errorf("failed to fetch messages: %w", err)
 	}
 
-	fmt.Printf("  Channel name: %s\n", result.ChannelName)
+	fmt.Printf("  Channel name: %s\n", channel.Name)
 	fmt.Printf("  Fetched %d messages\n", len(result.Messages))
 
 	// Organize messages by date
@@ -135,7 +144,7 @@ func processChannel(client *slack.Client, channelID string, startTime, endTime t
 
 	// Write markdown files
 	fmt.Printf("  Writing markdown files...\n")
-	if err := filewriter.WriteChannelMessages(exportPath, result.ChannelName, filewriterMessages); err != nil {
+	if err := filewriter.WriteChannelMessages(exportPath, channel.Name, filewriterMessages); err != nil {
 		return fmt.Errorf("failed to write files: %w", err)
 	}
 

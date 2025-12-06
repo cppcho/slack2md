@@ -32,19 +32,6 @@ type Channel struct {
 	Name string
 }
 
-// getChannelName fetches the channel name for a given channel ID
-func (c *Client) getChannelName(channelID string) (string, error) {
-	// Use conversations.info API to get channel information
-	channel, err := c.api.GetConversationInfo(&slack.GetConversationInfoInput{
-		ChannelID: channelID,
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to get channel info for %s: %w", channelID, err)
-	}
-
-	return channel.Name, nil
-}
-
 // FetchAllChannels fetches all channels where the bot is a member
 func (c *Client) FetchAllChannels() ([]Channel, error) {
 	var allChannels []Channel
@@ -52,14 +39,14 @@ func (c *Client) FetchAllChannels() ([]Channel, error) {
 
 	for {
 		// Get conversations with pagination
-		params := &slack.GetConversationsParameters{
+		params := &slack.GetConversationsForUserParameters{
 			Cursor:          cursor,
 			ExcludeArchived: true,
 			Limit:           200,
 			Types:           []string{"public_channel", "private_channel"},
 		}
 
-		channels, nextCursor, err := c.api.GetConversations(params)
+		channels, nextCursor, err := c.api.GetConversationsForUser(params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch conversations: %w", err)
 		}

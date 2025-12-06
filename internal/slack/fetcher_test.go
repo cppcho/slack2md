@@ -337,9 +337,6 @@ func TestFetchChannelMessages(t *testing.T) {
 			startTime: time.Unix(1000000, 0),
 			endTime:   time.Unix(2000000, 0),
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{GroupConversation: slack.GroupConversation{Name: "test-channel"}}, nil
-				}
 				m.getConversationHistoryFunc = func(params *slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error) {
 					return &slack.GetConversationHistoryResponse{
 						Messages: []slack.Message{
@@ -353,9 +350,6 @@ func TestFetchChannelMessages(t *testing.T) {
 				}
 			},
 			validate: func(t *testing.T, result *FetchResult) {
-				if result.ChannelName != "test-channel" {
-					t.Errorf("ChannelName = %q, want %q", result.ChannelName, "test-channel")
-				}
 				if len(result.Messages) != 1 {
 					t.Errorf("got %d messages, want 1", len(result.Messages))
 					return
@@ -373,9 +367,6 @@ func TestFetchChannelMessages(t *testing.T) {
 			endTime:   time.Unix(2000000, 0),
 			mockSetup: func(m *mockSlackAPI) {
 				callCount := 0
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{GroupConversation: slack.GroupConversation{Name: "test"}}, nil
-				}
 				m.getConversationHistoryFunc = func(params *slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error) {
 					callCount++
 					if callCount == 1 {
@@ -383,7 +374,7 @@ func TestFetchChannelMessages(t *testing.T) {
 							Messages: []slack.Message{
 								{Msg: slack.Msg{Timestamp: "1500000.000000", Text: "Msg1", User: "U001"}},
 							},
-							HasMore:          true,
+							HasMore: true,
 						}, nil
 					}
 					return &slack.GetConversationHistoryResponse{
@@ -410,13 +401,10 @@ func TestFetchChannelMessages(t *testing.T) {
 			startTime: time.Unix(1000000, 0),
 			endTime:   time.Unix(2000000, 0),
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{GroupConversation: slack.GroupConversation{Name: "test"}}, nil
-				}
 				m.getConversationHistoryFunc = func(params *slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error) {
 					return &slack.GetConversationHistoryResponse{
 						Messages: []slack.Message{
-							{Msg: slack.Msg{Timestamp: "1500000.000000", Text: "", User: "U001"}},        // Empty, skip
+							{Msg: slack.Msg{Timestamp: "1500000.000000", Text: "", User: "U001"}},      // Empty, skip
 							{Msg: slack.Msg{Timestamp: "1600000.000000", Text: "Valid", User: "U001"}}, // Keep
 						},
 						HasMore: false,
@@ -443,9 +431,6 @@ func TestFetchChannelMessages(t *testing.T) {
 			startTime: time.Unix(1000000, 0),
 			endTime:   time.Unix(2000000, 0),
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{GroupConversation: slack.GroupConversation{Name: "test"}}, nil
-				}
 				m.getConversationHistoryFunc = func(params *slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error) {
 					return &slack.GetConversationHistoryResponse{
 						Messages: []slack.Message{
@@ -488,27 +473,11 @@ func TestFetchChannelMessages(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:      "GetChannelName fails",
-			channelID: "C123",
-			startTime: time.Unix(1000000, 0),
-			endTime:   time.Unix(2000000, 0),
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return nil, fmt.Errorf("channel not found")
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to get channel info",
-		},
-		{
 			name:      "GetConversationHistory fails",
 			channelID: "C123",
 			startTime: time.Unix(1000000, 0),
 			endTime:   time.Unix(2000000, 0),
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{GroupConversation: slack.GroupConversation{Name: "test"}}, nil
-				}
 				m.getConversationHistoryFunc = func(params *slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error) {
 					return nil, fmt.Errorf("api error")
 				}

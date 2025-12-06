@@ -19,19 +19,12 @@ type Message struct {
 
 // FetchResult contains the fetched messages and channel information
 type FetchResult struct {
-	ChannelID   string
-	ChannelName string
-	Messages    []Message
+	ChannelID string
+	Messages  []Message
 }
 
 // FetchChannelMessages fetches all messages from a channel within the specified time range
 func (c *Client) FetchChannelMessages(channelID string, startTime, endTime time.Time) (*FetchResult, error) {
-	// Get channel name
-	channelName, err := c.getChannelName(channelID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Fetch messages with pagination
 	var allMessages []Message
 	cursor := ""
@@ -99,9 +92,8 @@ func (c *Client) FetchChannelMessages(channelID string, startTime, endTime time.
 	}
 
 	return &FetchResult{
-		ChannelID:   channelID,
-		ChannelName: channelName,
-		Messages:    allMessages,
+		ChannelID: channelID,
+		Messages:  allMessages,
 	}, nil
 }
 

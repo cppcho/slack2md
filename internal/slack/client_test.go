@@ -10,23 +10,15 @@ import (
 
 // mockSlackAPI implements SlackAPI for testing
 type mockSlackAPI struct {
-	getConversationInfoFunc    func(*slack.GetConversationInfoInput) (*slack.Channel, error)
-	getConversationsFunc       func(*slack.GetConversationsParameters) ([]slack.Channel, string, error)
-	getUserInfoFunc            func(string) (*slack.User, error)
-	getConversationHistoryFunc func(*slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error)
-	getConversationRepliesFunc func(*slack.GetConversationRepliesParameters) ([]slack.Message, bool, string, error)
+	GetConversationsForUserFunc func(*slack.GetConversationsForUserParameters) ([]slack.Channel, string, error)
+	getUserInfoFunc             func(string) (*slack.User, error)
+	getConversationHistoryFunc  func(*slack.GetConversationHistoryParameters) (*slack.GetConversationHistoryResponse, error)
+	getConversationRepliesFunc  func(*slack.GetConversationRepliesParameters) ([]slack.Message, bool, string, error)
 }
 
-func (m *mockSlackAPI) GetConversationInfo(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-	if m.getConversationInfoFunc != nil {
-		return m.getConversationInfoFunc(params)
-	}
-	return nil, fmt.Errorf("not implemented")
-}
-
-func (m *mockSlackAPI) GetConversations(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
-	if m.getConversationsFunc != nil {
-		return m.getConversationsFunc(params)
+func (m *mockSlackAPI) GetConversationsForUser(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
+	if m.GetConversationsForUserFunc != nil {
+		return m.GetConversationsForUserFunc(params)
 	}
 	return nil, "", fmt.Errorf("not implemented")
 }
@@ -52,145 +44,6 @@ func (m *mockSlackAPI) GetConversationReplies(params *slack.GetConversationRepli
 	return nil, false, "", fmt.Errorf("not implemented")
 }
 
-func TestGetChannelName(t *testing.T) {
-	tests := []struct {
-		name      string
-		channelID string
-		mockSetup func(*mockSlackAPI)
-		wantName  string
-		wantErr   bool
-		errMsg    string
-	}{
-		{
-			name:      "valid channel returns name",
-			channelID: "C1234567890",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{
-						GroupConversation: slack.GroupConversation{
-							Name: "general",
-						},
-					}, nil
-				}
-			},
-			wantName: "general",
-			wantErr:  false,
-		},
-		{
-			name:      "channel name with special characters",
-			channelID: "C1234567890",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{
-						GroupConversation: slack.GroupConversation{
-							Name: "team-updates-2024",
-						},
-					}, nil
-				}
-			},
-			wantName: "team-updates-2024",
-			wantErr:  false,
-		},
-		{
-			name:      "channel name with spaces",
-			channelID: "C1234567890",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{
-						GroupConversation: slack.GroupConversation{
-							Name: "my channel",
-						},
-					}, nil
-				}
-			},
-			wantName: "my channel",
-			wantErr:  false,
-		},
-		{
-			name:      "very long channel name",
-			channelID: "C1234567890",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return &slack.Channel{
-						GroupConversation: slack.GroupConversation{
-							Name: "this-is-a-very-long-channel-name-that-might-be-used-in-some-organizations",
-						},
-					}, nil
-				}
-			},
-			wantName: "this-is-a-very-long-channel-name-that-might-be-used-in-some-organizations",
-			wantErr:  false,
-		},
-		{
-			name:      "api error propagates",
-			channelID: "C1234567890",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return nil, fmt.Errorf("channel not found")
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to get channel info",
-		},
-		{
-			name:      "channel not found error",
-			channelID: "C9999999999",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return nil, fmt.Errorf("channel_not_found")
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to get channel info",
-		},
-		{
-			name:      "empty channel ID",
-			channelID: "",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return nil, fmt.Errorf("invalid_channel")
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to get channel info",
-		},
-		{
-			name:      "network timeout simulation",
-			channelID: "C1234567890",
-			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationInfoFunc = func(params *slack.GetConversationInfoInput) (*slack.Channel, error) {
-					return nil, fmt.Errorf("timeout: connection timed out")
-				}
-			},
-			wantErr: true,
-			errMsg:  "failed to get channel info",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock := &mockSlackAPI{}
-			tt.mockSetup(mock)
-			client := NewClientWithAPI(mock)
-
-			name, err := client.getChannelName(tt.channelID)
-
-			if (err != nil) != tt.wantErr {
-				t.Errorf("GetChannelName() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if tt.wantErr && tt.errMsg != "" && !strings.Contains(err.Error(), tt.errMsg) {
-				t.Errorf("error message = %q, want to contain %q", err.Error(), tt.errMsg)
-			}
-
-			if !tt.wantErr && name != tt.wantName {
-				t.Errorf("GetChannelName() = %q, want %q", name, tt.wantName)
-			}
-		})
-	}
-}
-
 func TestFetchAllChannels(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -202,7 +55,7 @@ func TestFetchAllChannels(t *testing.T) {
 		{
 			name: "single page of channels",
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					return []slack.Channel{
 						{GroupConversation: slack.GroupConversation{Name: "general", Conversation: slack.Conversation{ID: "C001"}}},
 						{GroupConversation: slack.GroupConversation{Name: "random", Conversation: slack.Conversation{ID: "C002"}}},
@@ -219,7 +72,7 @@ func TestFetchAllChannels(t *testing.T) {
 			name: "multiple pages of channels",
 			mockSetup: func(m *mockSlackAPI) {
 				callCount := 0
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					callCount++
 					if callCount == 1 {
 						return []slack.Channel{
@@ -244,7 +97,7 @@ func TestFetchAllChannels(t *testing.T) {
 		{
 			name: "empty result no channels",
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					return []slack.Channel{}, "", nil
 				}
 			},
@@ -254,7 +107,7 @@ func TestFetchAllChannels(t *testing.T) {
 		{
 			name: "exactly 200 channels (boundary test)",
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					channels := make([]slack.Channel, 200)
 					for i := 0; i < 200; i++ {
 						channels[i] = slack.Channel{
@@ -285,7 +138,7 @@ func TestFetchAllChannels(t *testing.T) {
 			name: "three pages of results",
 			mockSetup: func(m *mockSlackAPI) {
 				callCount := 0
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					callCount++
 					switch callCount {
 					case 1:
@@ -313,7 +166,7 @@ func TestFetchAllChannels(t *testing.T) {
 		{
 			name: "api error on first page",
 			mockSetup: func(m *mockSlackAPI) {
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					return nil, "", fmt.Errorf("api error")
 				}
 			},
@@ -324,7 +177,7 @@ func TestFetchAllChannels(t *testing.T) {
 			name: "api error on second page",
 			mockSetup: func(m *mockSlackAPI) {
 				callCount := 0
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					callCount++
 					if callCount == 1 {
 						return []slack.Channel{
@@ -341,7 +194,7 @@ func TestFetchAllChannels(t *testing.T) {
 			name: "last page with partial results",
 			mockSetup: func(m *mockSlackAPI) {
 				callCount := 0
-				m.getConversationsFunc = func(params *slack.GetConversationsParameters) ([]slack.Channel, string, error) {
+				m.GetConversationsForUserFunc = func(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error) {
 					callCount++
 					if callCount == 1 {
 						return []slack.Channel{

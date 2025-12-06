@@ -7,11 +7,8 @@ import (
 // SlackAPI defines the interface for Slack API operations.
 // This allows mocking in tests without hitting real Slack API.
 type SlackAPI interface {
-	// GetConversationInfo retrieves information about a conversation
-	GetConversationInfo(params *slack.GetConversationInfoInput) (*slack.Channel, error)
-
-	// GetConversations retrieves a list of conversations
-	GetConversations(params *slack.GetConversationsParameters) ([]slack.Channel, string, error)
+	// GetConversationsForUser returns the list conversations for a given user.
+	GetConversationsForUser(params *slack.GetConversationsForUserParameters) ([]slack.Channel, string, error)
 
 	// GetUserInfo retrieves information about a user
 	GetUserInfo(userID string) (*slack.User, error)
