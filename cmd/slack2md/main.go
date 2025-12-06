@@ -154,10 +154,11 @@ func processChannel(client *slack.Client, channel slack.Channel, startTime, endT
 // convertMessage converts slack.Message to filewriter.Message
 func ConvertMessage(msg slack.Message) filewriter.Message {
 	fwMsg := filewriter.Message{
-		Timestamp: msg.Timestamp,
-		ThreadTS:  msg.ThreadTS,
-		Text:      msg.Text,
-		IsParent:  msg.IsParent,
+		Timestamp:       msg.Timestamp,
+		ThreadTS:        msg.ThreadTS,
+		Text:            msg.Text,
+		UserDisplayName: msg.UserDisplayName,
+		IsParent:        msg.IsParent,
 	}
 
 	// Convert replies
