@@ -59,8 +59,13 @@ func convertSlackToMarkdown(text string) string {
 	strikeRe := regexp.MustCompile(`~([^~]+?)~`)
 	text = strikeRe.ReplaceAllString(text, "~~$1~~")
 
-	// 6. Code blocks and inline code are the same in both formats (`)
-	// 7. Quotes (>) are the same in both formats
+	// 6. Replace bullet characters with markdown bullets
+	// Handle variation selectors (U+FE0E, U+FE0F) that may follow bullet characters
+	bulletRe := regexp.MustCompile(`(?m)^(\s*)(\x{2022}|\x{25E6}|\x{25AA})[\x{FE0E}\x{FE0F}]?`)
+	text = bulletRe.ReplaceAllString(text, "$1*")
+
+	// 7. Code blocks and inline code are the same in both formats (`)
+	// 8. Quotes (>) are the same in both formats
 	// No conversion needed for these
 
 	return text

@@ -237,6 +237,26 @@ func TestConvertSlackToMarkdown(t *testing.T) {
 			input:    "Posted in <#C1234567>",
 			expected: "Posted in <#C1234567>",
 		},
+		{
+			name: "bulleted list with formatting",
+			input: `• aaa
+    ◦ bbb
+        ▪︎ ccc
+            • ddd
+                ◦ eee
+                ◦ fff`,
+			expected: `* aaa
+    * bbb
+        * ccc
+            * ddd
+                * eee
+                * fff`,
+		},
+		{
+			name:     "do not replace bullets if it is not a list",
+			input:    `zzz • aaa ◦ bbb ▪︎ ccc`,
+			expected: `zzz • aaa ◦ bbb ▪︎ ccc`,
+		},
 	}
 
 	for _, tt := range tests {
