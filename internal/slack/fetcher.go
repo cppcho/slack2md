@@ -59,7 +59,7 @@ func (c *Client) FetchChannelMessages(channelID string, startTime, endTime time.
 			}
 
 			// Get user display name
-			displayName := c.getUserDisplayName(msg.User)
+			displayName := c.getUserDisplayNameCached(msg.User)
 
 			message := Message{
 				Timestamp:       ts,
@@ -128,7 +128,7 @@ func (c *Client) fetchThreadReplies(channelID, threadTS string) ([]Message, erro
 		}
 
 		// Get user display name
-		displayName := c.getUserDisplayName(msg.User)
+		displayName := c.getUserDisplayNameCached(msg.User)
 
 		reply := Message{
 			Timestamp:       ts,

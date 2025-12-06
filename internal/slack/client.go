@@ -95,3 +95,15 @@ func (c *Client) getUserDisplayName(userID string) string {
 
 	return userID
 }
+
+var userDisplayNameCache = make(map[string]string)
+
+func (c *Client) getUserDisplayNameCached(userID string) string {
+	if displayName, ok := userDisplayNameCache[userID]; ok {
+		return displayName
+	}
+
+	displayName := c.getUserDisplayName(userID)
+	userDisplayNameCache[userID] = displayName
+	return displayName
+}
