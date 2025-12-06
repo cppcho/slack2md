@@ -11,8 +11,6 @@ import (
 )
 
 func main() {
-	common.PrintBanner("Slack Channel Export")
-
 	// Load configuration
 	config, err := LoadConfig()
 	if err != nil {

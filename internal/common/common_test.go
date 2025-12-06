@@ -26,82 +26,6 @@ func captureStdout(f func()) string {
 	return buf.String()
 }
 
-func TestPrintBanner(t *testing.T) {
-	tests := []struct {
-		name     string
-		toolName string
-		validate func(t *testing.T, output string)
-	}{
-		{
-			name:     "simple tool name",
-			toolName: "slack2md",
-			validate: func(t *testing.T, output string) {
-				expected := "=== slack2md ==="
-				if !strings.Contains(output, expected) {
-					t.Errorf("expected output to contain %q, got %q", expected, output)
-				}
-			},
-		},
-		{
-			name:     "tool name with spaces",
-			toolName: "Slack to Markdown",
-			validate: func(t *testing.T, output string) {
-				expected := "=== Slack to Markdown ==="
-				if !strings.Contains(output, expected) {
-					t.Errorf("expected output to contain %q, got %q", expected, output)
-				}
-			},
-		},
-		{
-			name:     "empty tool name",
-			toolName: "",
-			validate: func(t *testing.T, output string) {
-				expected := "===  ==="
-				if !strings.Contains(output, expected) {
-					t.Errorf("expected output to contain %q, got %q", expected, output)
-				}
-			},
-		},
-		{
-			name:     "tool name with special characters",
-			toolName: "tool-v1.0 (beta)",
-			validate: func(t *testing.T, output string) {
-				expected := "=== tool-v1.0 (beta) ==="
-				if !strings.Contains(output, expected) {
-					t.Errorf("expected output to contain %q, got %q", expected, output)
-				}
-			},
-		},
-		{
-			name:     "long tool name",
-			toolName: "A Very Long Tool Name That Should Still Work",
-			validate: func(t *testing.T, output string) {
-				expected := "=== A Very Long Tool Name That Should Still Work ==="
-				if !strings.Contains(output, expected) {
-					t.Errorf("expected output to contain %q, got %q", expected, output)
-				}
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			output := captureStdout(func() {
-				common.PrintBanner(tt.toolName)
-			})
-
-			// Verify newline is present
-			if !strings.HasSuffix(output, "\n") {
-				t.Error("expected output to end with newline")
-			}
-
-			if tt.validate != nil {
-				tt.validate(t, output)
-			}
-		})
-	}
-}
-
 func TestSuccess(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -265,13 +189,6 @@ func TestOutputFormatConsistency(t *testing.T) {
 		wantPrefix string
 	}{
 		{
-			name: "PrintBanner format",
-			function: func() {
-				common.PrintBanner("test")
-			},
-			wantPrefix: "===",
-		},
-		{
 			name: "Success format",
 			function: func() {
 				common.Success("test")
@@ -305,14 +222,12 @@ func TestOutputFormatConsistency(t *testing.T) {
 // TestMultipleOutputCalls verifies functions can be called multiple times
 func TestMultipleOutputCalls(t *testing.T) {
 	output := captureStdout(func() {
-		common.PrintBanner("Tool Name")
 		common.Success("First operation")
 		common.Success("Second operation")
 		common.Error("Something went wrong")
 	})
 
 	expectedParts := []string{
-		"=== Tool Name ===",
 		"✓ First operation",
 		"✓ Second operation",
 		"✗ Something went wrong",
@@ -323,20 +238,4 @@ func TestMultipleOutputCalls(t *testing.T) {
 			t.Errorf("expected output to contain %q, got %q", part, output)
 		}
 	}
-}
-
-// Example demonstrates the usage of output functions
-func ExamplePrintBanner() {
-	common.PrintBanner("slack2md")
-	// Output: === slack2md ===
-}
-
-func ExampleSuccess() {
-	common.Success("Export completed successfully")
-	// Output: ✓ Export completed successfully
-}
-
-func ExampleError() {
-	common.Error("Failed to connect to Slack API")
-	// Output: ✗ Failed to connect to Slack API
 }
