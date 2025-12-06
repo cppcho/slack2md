@@ -8,7 +8,7 @@ import (
 
 // Client wraps the Slack API client
 type Client struct {
-	api *slack.Client
+	api SlackAPI
 }
 
 // NewClient creates a new Slack API client
@@ -17,6 +17,13 @@ func NewClient(token string, appLevelToken string) *Client {
 		api: slack.New(token, slack.OptionAppLevelToken(appLevelToken)),
 	}
 	return client
+}
+
+// NewClientWithAPI creates a client with a custom API implementation (for testing)
+func NewClientWithAPI(api SlackAPI) *Client {
+	return &Client{
+		api: api,
+	}
 }
 
 // Channel represents a Slack channel
