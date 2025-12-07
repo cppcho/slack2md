@@ -1,4 +1,4 @@
-package slack
+package formatter
 
 import (
 	"html"
@@ -6,8 +6,16 @@ import (
 	"strings"
 )
 
-// convertSlackToMarkdown converts Slack's mrkdwn format to standard Markdown
-func convertSlackToMarkdown(text string) string {
+// MarkdownFormatter provides Slack to Markdown conversion
+type MarkdownFormatter struct{}
+
+// NewMarkdownFormatter creates a new MarkdownFormatter
+func NewMarkdownFormatter() *MarkdownFormatter {
+	return &MarkdownFormatter{}
+}
+
+// ConvertSlackToMarkdown converts Slack's mrkdwn format to standard Markdown
+func (f *MarkdownFormatter) ConvertSlackToMarkdown(text string) string {
 	// First, decode HTML entities (&gt; → >, &lt; → <, &amp; → &, etc.)
 	text = html.UnescapeString(text)
 
@@ -22,19 +30,6 @@ func convertSlackToMarkdown(text string) string {
 	text = bareURLRe.ReplaceAllString(text, "$1")
 
 	// 3. Convert bold: *text* → **text**
-	// Use negative lookbehind/lookahead to avoid matching * in middle of words or already converted **
-	// Since Go regex doesn't support lookbehind, we'll use a simpler approach
-	// Match *word* or *multiple words* but not already doubled **
-	boldRe := regexp.MustCompile(`(?:^|[\s\n])(\*)([^\*\n]+)\*`)
-	text = boldRe.ReplaceAllString(text, "${0:0}**$2**")
-	// Clean up the start marker we preserved
-	text = strings.ReplaceAll(text, "${0:0}", "")
-
-	// Actually, let's use a simpler and more reliable approach:
-	// Split on **, process each segment for *, then rejoin
-	// This prevents converting * to ** if it's already part of **
-
-	// Let me rewrite this more simply:
 	// First, protect existing ** by replacing with a placeholder
 	text = strings.ReplaceAll(text, "**", "\x00BOLD\x00")
 
@@ -55,7 +50,7 @@ func convertSlackToMarkdown(text string) string {
 	// Restore protected *
 	text = strings.ReplaceAll(text, "\x00STAR\x00", "*")
 
-	// 5. Strikethrough ~text~ → ~~text~~ (same format in both)
+	// 5. Strikethrough ~text~ → ~~text~~
 	strikeRe := regexp.MustCompile(`~([^~]+?)~`)
 	text = strikeRe.ReplaceAllString(text, "~~$1~~")
 

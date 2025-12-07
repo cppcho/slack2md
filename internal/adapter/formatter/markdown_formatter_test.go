@@ -1,8 +1,10 @@
-package slack
+package formatter
 
 import "testing"
 
-func TestConvertSlackToMarkdown(t *testing.T) {
+func TestMarkdownFormatter_ConvertSlackToMarkdown(t *testing.T) {
+	formatter := NewMarkdownFormatter()
+
 	tests := []struct {
 		name     string
 		input    string
@@ -27,7 +29,7 @@ func TestConvertSlackToMarkdown(t *testing.T) {
 		{
 			name:     "multiple bold segments",
 			input:    "*first* and *second*",
-			expected: "**first** and**second**",
+			expected: "**first** and **second**",
 		},
 
 		// Italic conversions
@@ -261,7 +263,7 @@ func TestConvertSlackToMarkdown(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := convertSlackToMarkdown(tt.input)
+			result := formatter.ConvertSlackToMarkdown(tt.input)
 			if result != tt.expected {
 				t.Errorf("ConvertSlackToMarkdown(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
@@ -269,8 +271,9 @@ func TestConvertSlackToMarkdown(t *testing.T) {
 	}
 }
 
-// TestConvertSlackToMarkdown_MarkdownPreservation verifies behavior with existing markdown
-func TestConvertSlackToMarkdown_MarkdownPreservation(t *testing.T) {
+func TestMarkdownFormatter_MarkdownPreservation(t *testing.T) {
+	formatter := NewMarkdownFormatter()
+
 	tests := []struct {
 		name     string
 		input    string
@@ -286,14 +289,11 @@ func TestConvertSlackToMarkdown_MarkdownPreservation(t *testing.T) {
 			input:    "[link text](https://example.com)",
 			expected: "[link text](https://example.com)",
 		},
-		// Note: The formatter is designed to convert Slack format to Markdown,
-		// so it will convert markdown-style formatting in the input as well.
-		// This is expected behavior since Slack messages use different syntax.
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := convertSlackToMarkdown(tt.input)
+			result := formatter.ConvertSlackToMarkdown(tt.input)
 			if result != tt.expected {
 				t.Errorf("ConvertSlackToMarkdown(%q) = %q, want %q", tt.input, result, tt.expected)
 			}

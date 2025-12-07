@@ -1,13 +1,12 @@
-package main
+package config
 
 import (
-	"errors"
 	"os"
 	"strings"
 )
 
-// Config holds the configuration for the Slack export tool
-type Config struct {
+// EnvConfig holds the configuration loaded from environment variables
+type EnvConfig struct {
 	BotToken   string
 	AppToken   string
 	ChannelIDs []string
@@ -15,22 +14,19 @@ type Config struct {
 	DaysBack   int
 }
 
-// LoadConfig reads configuration from environment variables
-func LoadConfig() (*Config, error) {
-	config := &Config{
+// LoadFromEnv reads configuration from environment variables
+func LoadFromEnv() (*EnvConfig, error) {
+	config := &EnvConfig{
 		DaysBack: 7, // Default: last 7 days
 	}
 
-	// Required: Bot token
+	// Bot token
 	config.BotToken = os.Getenv("SLACK_BOT_TOKEN")
-	if config.BotToken == "" {
-		return nil, errors.New("SLACK_BOT_TOKEN environment variable is required")
-	}
 
-	// Required: App token
+	// App token (optional)
 	config.AppToken = os.Getenv("SLACK_APP_TOKEN")
 
-	// Optional: Channel IDs (comma-separated)
+	// Channel IDs (optional, comma-separated)
 	// If not provided, auto-discovery will be used
 	channelIDsStr := os.Getenv("SLACK_CHANNEL_IDS")
 	if channelIDsStr != "" {
@@ -43,13 +39,9 @@ func LoadConfig() (*Config, error) {
 			}
 		}
 	}
-	// Note: Empty ChannelIDs is valid - will trigger auto-discovery in main()
 
-	// Required: Export path
+	// Export path
 	config.ExportPath = os.Getenv("SLACK_EXPORT_PATH")
-	if config.ExportPath == "" {
-		return nil, errors.New("SLACK_EXPORT_PATH environment variable is required")
-	}
 
 	return config, nil
 }

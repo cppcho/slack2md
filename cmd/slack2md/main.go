@@ -1,40 +1,79 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
-	"time"
 
-	"github.com/cppcho/slack2md/internal/common"
-	"github.com/cppcho/slack2md/internal/filewriter"
-	"github.com/cppcho/slack2md/internal/slack"
+	"github.com/cppcho/slack2md/internal/adapter/presenter"
+	"github.com/cppcho/slack2md/internal/adapter/repository"
+	"github.com/cppcho/slack2md/internal/domain/entities"
+	"github.com/cppcho/slack2md/internal/domain/valueobjects"
+	"github.com/cppcho/slack2md/internal/infrastructure/config"
+	"github.com/cppcho/slack2md/internal/infrastructure/filesystem"
+	"github.com/cppcho/slack2md/internal/infrastructure/logger"
+	infraslack "github.com/cppcho/slack2md/internal/infrastructure/slack"
+	"github.com/cppcho/slack2md/internal/usecase/dto"
+	"github.com/cppcho/slack2md/internal/usecase/service"
 )
 
 func main() {
-	// Load configuration
-	config, err := LoadConfig()
+	// 1. Load configuration from environment
+	envConfig, err := config.LoadFromEnv()
 	if err != nil {
-		common.Error(fmt.Sprintf("Configuration error: %v", err))
+		fmt.Printf("✗ Configuration error: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Initialize Slack client
-	client := slack.NewClient(config.BotToken, config.AppToken)
-
-	// Auto-discover channels if not manually specified
-	channels, err := discoverChannels(client)
-	if err != nil {
-		common.Error(fmt.Sprintf("Channel discovery failed: %v", err))
+	// 2. Validate configuration
+	validator := config.NewConfigValidator()
+	if err := validator.Validate(envConfig); err != nil {
+		fmt.Printf("✗ %v\n", err)
 		os.Exit(1)
 	}
 
-	if len(config.ChannelIDs) > 0 {
-		// filter out discovered channels to only those specified
-		var filtered []slack.Channel
+	// 3. Create infrastructure layer
+	log := logger.NewLogger(logger.INFO)
+	slackClient := infraslack.NewSlackClient(envConfig.BotToken, envConfig.AppToken)
+	fileWriter := filesystem.NewFileSystemWriter()
+	userCache := infraslack.NewUserCache()
+
+	// 4. Create adapter layer
+	slackRepo := repository.NewSlackRepository(slackClient, log, userCache)
+	fileRepo := repository.NewFileRepository(fileWriter, log)
+	consolePresenter := presenter.NewConsolePresenter()
+
+	// 5. Create use case service
+	exportService := service.NewExportService(slackRepo, fileRepo, log)
+
+	// 6. Build input DTO
+	input := dto.ExportChannelsInput{
+		BotToken:   envConfig.BotToken,
+		AppToken:   envConfig.AppToken,
+		ChannelIDs: envConfig.ChannelIDs,
+		ExportPath: envConfig.ExportPath,
+		DaysBack:   envConfig.DaysBack,
+	}
+
+	// Print export information
+	ctx := context.Background()
+
+	// Auto-discover channels to display them
+	log.Info("Auto-discovering channels...")
+	channels, err := slackRepo.FetchAllChannels(ctx)
+	if err != nil {
+		consolePresenter.Error(fmt.Sprintf("Channel discovery failed: %v", err))
+		os.Exit(1)
+	}
+
+	// If specific channels requested, filter the display
+	if len(input.ChannelIDs) > 0 {
 		channelIDSet := make(map[string]struct{})
-		for _, id := range config.ChannelIDs {
+		for _, id := range input.ChannelIDs {
 			channelIDSet[id] = struct{}{}
 		}
+
+		var filtered []entities.Channel
 		for _, ch := range channels {
 			if _, exists := channelIDSet[ch.ID]; exists {
 				filtered = append(filtered, ch)
@@ -43,131 +82,31 @@ func main() {
 		channels = filtered
 	}
 
-	// Validate we have channels to export
-	if len(channels) == 0 {
-		common.Error("No channels to export. Either provide SLACK_CHANNEL_IDS or ensure bot is invited to channels.")
+	consolePresenter.PrintChannelList(channels)
+
+	// Calculate time range for display
+	timeRange, _ := valueobjects.NewTimeRangeFromDaysBack(input.DaysBack)
+	consolePresenter.PrintExportInfo(
+		input.DaysBack,
+		timeRange.Start.Format("2006-01-02"),
+		timeRange.End.Format("2006-01-02"),
+		input.ExportPath,
+	)
+
+	// 7. Execute use case
+	output, err := exportService.ExportChannels(ctx, input)
+	if err != nil {
+		consolePresenter.Error(fmt.Sprintf("Export failed: %v", err))
 		os.Exit(1)
 	}
 
-	// Calculate date range (last N days)
-	endTime := time.Now()
-	startTime := endTime.AddDate(0, 0, -config.DaysBack)
+	// 8. Present results
+	consolePresenter.PrintSummary(output.Summary)
 
-	fmt.Printf("Exporting messages from last %d days (%s to %s)\n",
-		config.DaysBack,
-		startTime.Format("2006-01-02"),
-		endTime.Format("2006-01-02"))
-	fmt.Printf("Export path: %s\n\n", config.ExportPath)
-
-	// Track success/failure counts
-	successCount := 0
-	failureCount := 0
-
-	// Process each channel
-	for _, channel := range channels {
-		fmt.Printf("Processing channel %s...\n", channel.Name)
-
-		if err := processChannel(client, channel, startTime, endTime, config.ExportPath); err != nil {
-			common.Error(fmt.Sprintf("Failed to process channel %s: %v", channel.Name, err))
-			failureCount++
-		} else {
-			common.Success(fmt.Sprintf("Successfully exported channel %s", channel.Name))
-			successCount++
-		}
-
-		fmt.Println()
-	}
-
-	// Print summary
-	fmt.Printf("\n--- Summary ---\n")
-	fmt.Printf("Total channels: %d\n", len(channels))
-	fmt.Printf("Successful exports: %d\n", successCount)
-	fmt.Printf("Failed exports: %d\n", failureCount)
-
-	if failureCount > 0 {
-		common.Error("Some channels failed to export")
+	if output.Summary.FailureCount > 0 {
+		consolePresenter.Error("Some channels failed to export")
 		os.Exit(1)
 	}
 
-	common.Success("All channels exported successfully!")
-}
-
-// discoverChannels auto-discovers channels if not manually specified
-func discoverChannels(client *slack.Client) ([]slack.Channel, error) {
-	// Auto-discover channels
-	fmt.Println("Auto-discovering channels...")
-	channels, err := client.FetchAllChannels()
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch channels: %w", err)
-	}
-
-	if len(channels) == 0 {
-		return nil, fmt.Errorf("no channels found - bot may not be invited to any channels")
-	}
-
-	fmt.Printf("Found %d channel(s):\n", len(channels))
-	for _, ch := range channels {
-		fmt.Printf("  - %s (%s)\n", ch.Name, ch.ID)
-	}
-	fmt.Println()
-
-	return channels, nil
-}
-
-// processChannel handles the export for a single channel
-func processChannel(client *slack.Client, channel slack.Channel, startTime, endTime time.Time, exportPath string) error {
-	// Fetch messages from Slack
-	fmt.Printf("  Fetching messages from Slack...\n")
-	result, err := client.FetchChannelMessages(channel.ID, startTime, endTime)
-	if err != nil {
-		return fmt.Errorf("failed to fetch messages: %w", err)
-	}
-
-	fmt.Printf("  Channel name: %s\n", channel.Name)
-	fmt.Printf("  Fetched %d messages\n", len(result.Messages))
-
-	// Organize messages by date
-	fmt.Printf("  Organizing messages by date...\n")
-	messagesByDate := slack.OrganizeMessagesByDate(result.Messages)
-
-	fmt.Printf("  Messages span %d days\n", len(messagesByDate))
-
-	// Convert slack.Message to filewriter.Message
-	filewriterMessages := make(map[string][]filewriter.Message)
-	for date, messages := range messagesByDate {
-		var fwMessages []filewriter.Message
-		for _, msg := range messages {
-			fwMessages = append(fwMessages, ConvertMessage(msg))
-		}
-		filewriterMessages[date] = fwMessages
-	}
-
-	// Write markdown files
-	fmt.Printf("  Writing markdown files...\n")
-	if err := filewriter.WriteChannelMessages(exportPath, channel.Name, filewriterMessages); err != nil {
-		return fmt.Errorf("failed to write files: %w", err)
-	}
-
-	return nil
-}
-
-// convertMessage converts slack.Message to filewriter.Message
-func ConvertMessage(msg slack.Message) filewriter.Message {
-	fwMsg := filewriter.Message{
-		Timestamp:       msg.Timestamp,
-		ThreadTS:        msg.ThreadTS,
-		Text:            msg.Text,
-		UserDisplayName: msg.UserDisplayName,
-		IsParent:        msg.IsParent,
-	}
-
-	// Convert replies
-	if len(msg.Replies) > 0 {
-		fwMsg.Replies = make([]filewriter.Message, len(msg.Replies))
-		for i, reply := range msg.Replies {
-			fwMsg.Replies[i] = ConvertMessage(reply)
-		}
-	}
-
-	return fwMsg
+	consolePresenter.Success("All channels exported successfully!")
 }
