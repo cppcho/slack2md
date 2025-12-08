@@ -2,6 +2,35 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Principles
+
+When working with this codebase, follow these core principles:
+
+1. **Golang Best Practices**
+   - Use idiomatic Go code patterns
+   - Proper error handling (always check errors)
+   - Effective use of interfaces and composition
+   - Clear naming conventions
+   - Leverage Go's standard library
+
+2. **Clean Architecture (Practical Application)**
+   - Maintain clear layer separation (Domain → Use Case → Adapter → Infrastructure)
+   - Follow dependency rule: dependencies point inward
+   - Keep domain logic independent of external frameworks
+   - Use selective dependency injection for external dependencies only
+
+3. **Git Commit Convention**
+   - Follow conventional commit format: `type: description`
+   - Do not include scope (e.g., `feat: add user cache`, not `feat(cache): add user cache`)
+   - Use short bullet points in commit body for details
+   - Common types: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
+
+4. **Test & Build Validation**
+   - Every completed change must pass tests and build successfully
+   - Run `make test` and `make build` before considering work complete
+   - Fix any failing tests or build errors before committing
+   - Never leave the codebase in a broken state
+
 ## Build & Development Commands
 
 ### Building
