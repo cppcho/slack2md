@@ -1,16 +1,15 @@
-package repository
+package filesystem
 
 import (
 	"testing"
 	"time"
 
 	"github.com/cppcho/slack2md/internal/domain/entities"
-	"github.com/cppcho/slack2md/internal/infrastructure/filesystem"
-	"github.com/cppcho/slack2md/internal/infrastructure/logger"
+	"github.com/cppcho/slack2md/internal/adapter/logger"
 )
 
 func TestNewFileRepository(t *testing.T) {
-	writer := filesystem.NewFileSystemWriter()
+	writer := NewFileSystemWriter()
 	log := logger.NewLogger(logger.INFO)
 
 	repo := NewFileRepository(writer, log)
@@ -26,7 +25,7 @@ func TestNewFileRepository(t *testing.T) {
 }
 
 func TestFileRepository_SanitizeChannelName(t *testing.T) {
-	writer := filesystem.NewFileSystemWriter()
+	writer := NewFileSystemWriter()
 	log := logger.NewLogger(logger.ERROR)
 	repo := NewFileRepository(writer, log)
 
@@ -73,7 +72,7 @@ func TestFileRepository_SanitizeChannelName(t *testing.T) {
 }
 
 func TestFileRepository_IsSameDay(t *testing.T) {
-	writer := filesystem.NewFileSystemWriter()
+	writer := NewFileSystemWriter()
 	log := logger.NewLogger(logger.ERROR)
 	repo := NewFileRepository(writer, log)
 
@@ -91,7 +90,7 @@ func TestFileRepository_IsSameDay(t *testing.T) {
 }
 
 func TestFileRepository_GetSortedDates(t *testing.T) {
-	writer := filesystem.NewFileSystemWriter()
+	writer := NewFileSystemWriter()
 	log := logger.NewLogger(logger.ERROR)
 	repo := NewFileRepository(writer, log)
 

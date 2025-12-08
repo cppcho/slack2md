@@ -1,4 +1,4 @@
-package repository
+package filesystem
 
 import (
 	"context"
@@ -10,18 +10,17 @@ import (
 
 	"github.com/cppcho/slack2md/internal/domain/entities"
 	"github.com/cppcho/slack2md/internal/domain/valueobjects"
-	"github.com/cppcho/slack2md/internal/infrastructure/filesystem"
 	"github.com/cppcho/slack2md/internal/usecase/interfaces"
 )
 
 // FileRepositoryImpl implements the FileRepository interface
 type FileRepositoryImpl struct {
-	writer filesystem.FileWriter
+	writer FileWriter
 	logger interfaces.Logger
 }
 
 // NewFileRepository creates a new FileRepositoryImpl
-func NewFileRepository(writer filesystem.FileWriter, logger interfaces.Logger) *FileRepositoryImpl {
+func NewFileRepository(writer FileWriter, logger interfaces.Logger) *FileRepositoryImpl {
 	return &FileRepositoryImpl{
 		writer: writer,
 		logger: logger,

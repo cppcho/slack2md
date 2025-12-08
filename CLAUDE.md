@@ -14,7 +14,7 @@ When working with this codebase, follow these core principles:
    - Leverage Go's standard library
 
 2. **Clean Architecture (Practical Application)**
-   - Maintain clear layer separation (Domain → Use Case → Adapter → Infrastructure)
+   - Maintain clear layer separation (Domain → Use Case → Adapter)
    - Follow dependency rule: dependencies point inward
    - Keep domain logic independent of external frameworks
    - Use selective dependency injection for external dependencies only
@@ -74,12 +74,11 @@ This repository exports Slack channel messages to organized markdown files using
 
 ### Clean Architecture Layers
 
-The application follows Clean Architecture with clear separation of concerns across four main layers:
+The application follows Clean Architecture with clear separation of concerns across three main layers:
 
 1. **Domain** (innermost) - Business entities and value objects
 2. **Use Case** - Application business rules and orchestration
-3. **Adapter** - Interface adapters (repositories, presenters, formatters)
-4. **Infrastructure** (outermost) - External frameworks and tools
+3. **Adapter** (outermost) - Interface adapters and external integrations
 
 ### Directory Structure
 
@@ -106,25 +105,22 @@ slack2md/
 │   │   │   └── export_output.go         # Output DTO
 │   │   └── service/
 │   │       └── export_service.go        # Main export orchestration
-│   ├── adapter/                          # Adapter Layer
-│   │   ├── repository/
-│   │   │   ├── slack_repository_impl.go # Slack API repository
-│   │   │   └── file_repository_impl.go  # File system repository
-│   │   ├── formatter/
-│   │   │   └── markdown_formatter.go    # Slack→Markdown formatter
-│   │   └── presenter/
-│   │       └── console_presenter.go     # Console output presenter
-│   └── infrastructure/                   # Infrastructure Layer
+│   └── adapter/                          # Adapter Layer
 │       ├── slack/
-│       │   ├── client.go                # Slack API client wrapper
-│       │   └── user_cache.go            # User display name cache
+│       │   ├── client.go                # Slack API client wrapper + interface
+│       │   ├── user_cache.go            # User display name cache
+│       │   ├── repository.go            # Slack API repository implementation
+│       │   └── formatter.go             # Slack→Markdown formatter
 │       ├── filesystem/
-│       │   └── writer.go                # File system writer
+│       │   ├── writer.go                # File system writer + interface
+│       │   └── repository.go            # File system repository implementation
+│       ├── config/
+│       │   ├── env_loader.go            # Environment config loader
+│       │   └── validator.go             # Config validation
 │       ├── logger/
-│       │   └── logger_impl.go           # Logger implementation
-│       └── config/
-│           ├── env_loader.go            # Environment config loader
-│           └── validator.go             # Config validation
+│       │   └── logger.go                # Logger implementation
+│       └── presenter/
+│           └── console_presenter.go     # Console output presenter
 └── bin/                                  # Compiled binaries (gitignored)
 ```
 
@@ -182,53 +178,44 @@ Application business rules that orchestrate the export process.
 
 ### Adapter Layer (`internal/adapter/`)
 
-Interface adapters that convert between use cases and external interfaces.
+Interface adapters that handle external integrations and convert between use cases and external interfaces. Organized by domain for cohesion.
 
-**Repositories:**
+**Slack Domain (`adapter/slack/`):**
+- `SlackClient`: Wraps slack-go/slack library with interface
+- `UserCache`: Thread-safe cache for user display names
 - `SlackRepositoryImpl`: Implements Slack data fetching
-  - Wraps infrastructure Slack client
+  - Uses SlackClient for API calls
   - Creates MarkdownFormatter internally (selective DI)
   - Handles pagination, threads, user display name caching
   - Converts Slack messages to domain entities
-
-- `FileRepositoryImpl`: Implements file writing
-  - Wraps infrastructure FileWriter
-  - Organizes files by date
-  - Formats markdown with proper headers
-
-**Formatter:**
 - `MarkdownFormatter`: Converts Slack mrkdwn to standard Markdown
   - Handles bold, italic, strikethrough, links
   - Processes HTML entities
   - Converts bullet points
 
-**Presenter:**
-- `ConsolePresenter`: CLI output formatting
-  - Success/error messages
-  - Channel lists
-  - Export summaries
-  - Progress information
+**Filesystem Domain (`adapter/filesystem/`):**
+- `FileWriter`: Wraps os.WriteFile and os.MkdirAll with interface
+- `FileRepositoryImpl`: Implements file writing
+  - Uses FileWriter for file operations
+  - Organizes files by date
+  - Formats markdown with proper headers
 
-### Infrastructure Layer (`internal/infrastructure/`)
-
-External frameworks, tools, and drivers.
-
-**Slack:**
-- `SlackClient`: Wraps slack-go/slack library with interface
-- `UserCache`: Thread-safe cache for user display names
-
-**FileSystem:**
-- `FileWriter`: Wraps os.WriteFile and os.MkdirAll
-
-**Logger:**
-- `LoggerImpl`: stdout logger with log levels (DEBUG, INFO, WARN, ERROR)
-
-**Config:**
+**Config (`adapter/config/`):**
 - `EnvConfig`: Environment variable loader
 - `ConfigValidator`: Validates configuration with detailed error messages
   - Token format validation (xoxb-, xapp-)
   - Required field checks
   - Range validation (DaysBack 0-365)
+
+**Logger (`adapter/logger/`):**
+- `LoggerImpl`: stdout logger with log levels (DEBUG, INFO, WARN, ERROR)
+
+**Presenter (`adapter/presenter/`):**
+- `ConsolePresenter`: CLI output formatting
+  - Success/error messages
+  - Channel lists
+  - Export summaries
+  - Progress information
 
 ## Dependency Injection Pattern
 
@@ -242,10 +229,10 @@ External frameworks, tools, and drivers.
 ```go
 1. Load config from environment
 2. Validate config
-3. Create infrastructure (logger, slackClient, fileWriter, userCache)
-4. Create adapters (slackRepo, fileRepo, presenter)
-5. Create use case service (exportService)
-6. Execute use case with input DTO
+3. Create adapter layer (logger, slackClient, fileWriter, userCache, repositories, presenter)
+4. Create use case service (exportService)
+5. Build input DTO
+6. Execute use case
 7. Present results
 ```
 
@@ -254,19 +241,17 @@ External frameworks, tools, and drivers.
 ```
 Environment Variables
     ↓
-Config Validation
+Config Validation (Adapter Layer)
     ↓
-Infrastructure Layer (Slack Client, File Writer, Logger, Cache)
+Adapter Layer Components (Slack Client, File Writer, Logger, Cache)
     ↓
-Adapter Layer (Repositories wrap infrastructure)
-    ↓
-Use Case Layer (ExportService orchestrates)
+Use Case Layer (ExportService orchestrates via repository interfaces)
     ↓
 Domain Entities (Channel, Message, TimeRange, etc.)
     ↓
-Adapter Layer (Repositories format and write)
+Adapter Layer (Repositories format and write via FileWriter)
     ↓
-Infrastructure Layer (Files written to disk)
+File System (Files written to disk)
 ```
 
 ## Key Design Decisions
@@ -289,11 +274,10 @@ Infrastructure Layer (Files written to disk)
 1. **Domain changes**: Add entities/value objects in `internal/domain/`
 2. **Use case changes**: Update service in `internal/usecase/service/`
 3. **New interfaces**: Define in `internal/usecase/interfaces/`
-4. **Implementation**: Add in `internal/adapter/` or `internal/infrastructure/`
+4. **Implementation**: Add in appropriate `internal/adapter/` subdirectory (organized by domain)
 5. **Wire dependencies**: Update `main.go` composition root
 
 ### Import Paths
 - Domain: `github.com/cppcho/slack2md/internal/domain/{entities|valueobjects}`
 - Use Cases: `github.com/cppcho/slack2md/internal/usecase/{interfaces|dto|service}`
-- Adapters: `github.com/cppcho/slack2md/internal/adapter/{repository|formatter|presenter}`
-- Infrastructure: `github.com/cppcho/slack2md/internal/infrastructure/{slack|filesystem|logger|config}`
+- Adapters: `github.com/cppcho/slack2md/internal/adapter/{slack|filesystem|config|logger|presenter}`

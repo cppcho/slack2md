@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cppcho/slack2md/internal/adapter/logger"
 	"github.com/cppcho/slack2md/internal/domain/entities"
 	"github.com/cppcho/slack2md/internal/domain/valueobjects"
-	"github.com/cppcho/slack2md/internal/infrastructure/logger"
 )
 
 // Mock repositories for testing

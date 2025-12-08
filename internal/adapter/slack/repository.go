@@ -1,35 +1,33 @@
-package repository
+package slack
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/cppcho/slack2md/internal/adapter/formatter"
 	"github.com/cppcho/slack2md/internal/domain/entities"
 	"github.com/cppcho/slack2md/internal/domain/valueobjects"
-	infraslack "github.com/cppcho/slack2md/internal/infrastructure/slack"
 	"github.com/cppcho/slack2md/internal/usecase/interfaces"
 	slackapi "github.com/slack-go/slack"
 )
 
 // SlackRepositoryImpl implements the SlackRepository interface
 type SlackRepositoryImpl struct {
-	client    infraslack.SlackClient
-	formatter *formatter.MarkdownFormatter
+	client    SlackClient
+	formatter *MarkdownFormatter
 	logger    interfaces.Logger
-	userCache *infraslack.UserCache
+	userCache *UserCache
 }
 
 // NewSlackRepository creates a new SlackRepositoryImpl
 func NewSlackRepository(
-	client infraslack.SlackClient,
+	client SlackClient,
 	logger interfaces.Logger,
-	userCache *infraslack.UserCache,
+	userCache *UserCache,
 ) *SlackRepositoryImpl {
 	return &SlackRepositoryImpl{
 		client:    client,
-		formatter: formatter.NewMarkdownFormatter(), // Created internally, not injected
+		formatter: NewMarkdownFormatter(), // Created internally, not injected
 		logger:    logger,
 		userCache: userCache,
 	}

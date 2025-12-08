@@ -1,10 +1,9 @@
-package repository
+package slack
 
 import (
 	"testing"
 
-	"github.com/cppcho/slack2md/internal/infrastructure/logger"
-	"github.com/cppcho/slack2md/internal/infrastructure/slack"
+	"github.com/cppcho/slack2md/internal/adapter/logger"
 )
 
 // MockSlackClient for testing
@@ -27,9 +26,9 @@ func (m *MockSlackClient) GetUserInfo(userID string) (interface{}, error) {
 }
 
 func TestNewSlackRepository(t *testing.T) {
-	client := slack.NewSlackClient("xoxb-test", "")
+	client := NewSlackClient("xoxb-test", "")
 	log := logger.NewLogger(logger.INFO)
-	cache := slack.NewUserCache()
+	cache := NewUserCache()
 
 	repo := NewSlackRepository(client, log, cache)
 	if repo == nil {
@@ -50,9 +49,9 @@ func TestNewSlackRepository(t *testing.T) {
 }
 
 func TestSlackRepository_ParseSlackTimestamp(t *testing.T) {
-	client := slack.NewSlackClient("xoxb-test", "")
+	client := NewSlackClient("xoxb-test", "")
 	log := logger.NewLogger(logger.ERROR) // Suppress logs during test
-	cache := slack.NewUserCache()
+	cache := NewUserCache()
 	repo := NewSlackRepository(client, log, cache)
 
 	tests := []struct {

@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cppcho/slack2md/internal/adapter/config"
+	"github.com/cppcho/slack2md/internal/adapter/filesystem"
+	"github.com/cppcho/slack2md/internal/adapter/logger"
 	"github.com/cppcho/slack2md/internal/adapter/presenter"
-	"github.com/cppcho/slack2md/internal/adapter/repository"
+	"github.com/cppcho/slack2md/internal/adapter/slack"
 	"github.com/cppcho/slack2md/internal/domain/entities"
 	"github.com/cppcho/slack2md/internal/domain/valueobjects"
-	"github.com/cppcho/slack2md/internal/infrastructure/config"
-	"github.com/cppcho/slack2md/internal/infrastructure/filesystem"
-	"github.com/cppcho/slack2md/internal/infrastructure/logger"
-	infraslack "github.com/cppcho/slack2md/internal/infrastructure/slack"
 	"github.com/cppcho/slack2md/internal/usecase/dto"
 	"github.com/cppcho/slack2md/internal/usecase/service"
 )
@@ -32,21 +31,20 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 3. Create infrastructure layer
+	// 3. Create adapter layer
 	log := logger.NewLogger(logger.INFO)
-	slackClient := infraslack.NewSlackClient(envConfig.BotToken, envConfig.AppToken)
+	slackClient := slack.NewSlackClient(envConfig.BotToken, envConfig.AppToken)
 	fileWriter := filesystem.NewFileSystemWriter()
-	userCache := infraslack.NewUserCache()
+	userCache := slack.NewUserCache()
 
-	// 4. Create adapter layer
-	slackRepo := repository.NewSlackRepository(slackClient, log, userCache)
-	fileRepo := repository.NewFileRepository(fileWriter, log)
+	slackRepo := slack.NewSlackRepository(slackClient, log, userCache)
+	fileRepo := filesystem.NewFileRepository(fileWriter, log)
 	consolePresenter := presenter.NewConsolePresenter()
 
-	// 5. Create use case service
+	// 4. Create use case service
 	exportService := service.NewExportService(slackRepo, fileRepo, log)
 
-	// 6. Build input DTO
+	// 5. Build input DTO
 	input := dto.ExportChannelsInput{
 		BotToken:   envConfig.BotToken,
 		AppToken:   envConfig.AppToken,
@@ -93,14 +91,14 @@ func main() {
 		input.ExportPath,
 	)
 
-	// 7. Execute use case
+	// 6. Execute use case
 	output, err := exportService.ExportChannels(ctx, input)
 	if err != nil {
 		consolePresenter.Error(fmt.Sprintf("Export failed: %v", err))
 		os.Exit(1)
 	}
 
-	// 8. Present results
+	// 7. Present results
 	consolePresenter.PrintSummary(output.Summary)
 
 	if output.Summary.FailureCount > 0 {
