@@ -33,7 +33,7 @@ func main() {
 
 	// 3. Create adapter layer
 	log := logger.NewLogger(logger.INFO)
-	slackClient := slack.NewSlackClient(envConfig.BotToken, envConfig.AppToken)
+	slackClient := slack.NewClient(envConfig.BotToken, envConfig.AppToken)
 	fileWriter := filesystem.NewFileSystemWriter()
 	userCache := slack.NewUserCache()
 

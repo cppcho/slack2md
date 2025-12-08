@@ -12,39 +12,39 @@ const (
 	ERROR
 )
 
-// LoggerImpl implements the Logger interface
-type LoggerImpl struct {
+// Logger implements the interfaces.Logger interface
+type Logger struct {
 	level LogLevel
 }
 
 // NewLogger creates a new Logger with the specified minimum log level
-func NewLogger(level LogLevel) *LoggerImpl {
-	return &LoggerImpl{level: level}
+func NewLogger(level LogLevel) *Logger {
+	return &Logger{level: level}
 }
 
 // Info logs an informational message
-func (l *LoggerImpl) Info(msg string, args ...interface{}) {
+func (l *Logger) Info(msg string, args ...interface{}) {
 	if l.level <= INFO {
 		fmt.Printf("[INFO] "+msg+"\n", args...)
 	}
 }
 
 // Warn logs a warning message
-func (l *LoggerImpl) Warn(msg string, args ...interface{}) {
+func (l *Logger) Warn(msg string, args ...interface{}) {
 	if l.level <= WARN {
 		fmt.Printf("[WARN] "+msg+"\n", args...)
 	}
 }
 
 // Error logs an error message
-func (l *LoggerImpl) Error(msg string, args ...interface{}) {
+func (l *Logger) Error(msg string, args ...interface{}) {
 	if l.level <= ERROR {
 		fmt.Printf("[ERROR] "+msg+"\n", args...)
 	}
 }
 
 // Debug logs a debug message
-func (l *LoggerImpl) Debug(msg string, args ...interface{}) {
+func (l *Logger) Debug(msg string, args ...interface{}) {
 	if l.level <= DEBUG {
 		fmt.Printf("[DEBUG] "+msg+"\n", args...)
 	}

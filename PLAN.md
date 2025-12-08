@@ -222,7 +222,7 @@ Methods:
 **Files to create:**
 11. `internal/infrastructure/logger/logger_impl.go`
     - LogLevel constants (DEBUG, INFO, WARN, ERROR)
-    - LoggerImpl struct with level field
+    - Logger struct with level field
     - NewLogger constructor
     - Implement Logger interface methods
 
@@ -253,9 +253,9 @@ Methods:
     - Get and Set methods (thread-safe)
 
 17. `internal/infrastructure/slack/client.go`
-    - SlackClient interface (for mocking)
-    - SlackClientImpl struct wrapping *slack.Client
-    - NewSlackClient constructor
+    - Client interface (for mocking)
+    - APIClient struct wrapping *slack.Client
+    - NewClient constructor
     - Implement interface methods (delegate to slack.Client)
 
 18. `internal/infrastructure/slack/client_test.go`
@@ -293,7 +293,7 @@ Methods:
 
 24. `internal/adapter/repository/slack_repository_impl.go`
     - Refactor from `internal/slack/client.go` + `internal/slack/fetcher.go`
-    - SlackRepositoryImpl struct (client, logger, userCache)
+    - Repository struct (client, logger, userCache)
     - Creates MarkdownFormatter internally (not injected)
     - NewSlackRepository constructor
     - Implement SlackRepository interface:
@@ -303,12 +303,12 @@ Methods:
     - Helper: fetchThreadReplies, parseSlackTimestamp
 
 25. `internal/adapter/repository/slack_repository_impl_test.go`
-    - Test with mock SlackClient
+    - Test with mock Client
     - Test pagination, threads, caching
 
 26. `internal/adapter/repository/file_repository_impl.go`
     - Refactor from `internal/filewriter/writer.go`
-    - FileRepositoryImpl struct (writer, logger)
+    - Repository struct (writer, logger)
     - NewFileRepository constructor
     - Implement FileRepository interface:
       - WriteMessages: organize by date, write markdown files + logging

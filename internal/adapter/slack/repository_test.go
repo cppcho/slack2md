@@ -26,7 +26,7 @@ func (m *MockSlackClient) GetUserInfo(userID string) (interface{}, error) {
 }
 
 func TestNewSlackRepository(t *testing.T) {
-	client := NewSlackClient("xoxb-test", "")
+	client := NewClient("xoxb-test", "")
 	log := logger.NewLogger(logger.INFO)
 	cache := NewUserCache()
 
@@ -49,7 +49,7 @@ func TestNewSlackRepository(t *testing.T) {
 }
 
 func TestSlackRepository_ParseSlackTimestamp(t *testing.T) {
-	client := NewSlackClient("xoxb-test", "")
+	client := NewClient("xoxb-test", "")
 	log := logger.NewLogger(logger.ERROR) // Suppress logs during test
 	cache := NewUserCache()
 	repo := NewSlackRepository(client, log, cache)

@@ -13,22 +13,22 @@ import (
 	"github.com/cppcho/slack2md/internal/usecase/interfaces"
 )
 
-// FileRepositoryImpl implements the FileRepository interface
-type FileRepositoryImpl struct {
+// Repository implements the interfaces.FileRepository interface
+type Repository struct {
 	writer FileWriter
 	logger interfaces.Logger
 }
 
-// NewFileRepository creates a new FileRepositoryImpl
-func NewFileRepository(writer FileWriter, logger interfaces.Logger) *FileRepositoryImpl {
-	return &FileRepositoryImpl{
+// NewFileRepository creates a new Repository
+func NewFileRepository(writer FileWriter, logger interfaces.Logger) *Repository {
+	return &Repository{
 		writer: writer,
 		logger: logger,
 	}
 }
 
 // WriteMessages writes messages to markdown files organized by date
-func (r *FileRepositoryImpl) WriteMessages(ctx context.Context, config valueobjects.ExportConfig, channel entities.Channel, messagesByDate map[string][]entities.Message) error {
+func (r *Repository) WriteMessages(ctx context.Context, config valueobjects.ExportConfig, channel entities.Channel, messagesByDate map[string][]entities.Message) error {
 	// Sanitize channel name
 	sanitizedName := r.sanitizeChannelName(channel.Name)
 
@@ -75,12 +75,12 @@ func (r *FileRepositoryImpl) WriteMessages(ctx context.Context, config valueobje
 }
 
 // EnsureDirectoryExists creates a directory if it doesn't exist
-func (r *FileRepositoryImpl) EnsureDirectoryExists(path string) error {
+func (r *Repository) EnsureDirectoryExists(path string) error {
 	return r.writer.MkdirAll(path, 0755)
 }
 
 // writeMarkdownFile writes messages to a markdown file for a specific date
-func (r *FileRepositoryImpl) writeMarkdownFile(filePath string, messages []entities.Message, date string, parentDate time.Time) error {
+func (r *Repository) writeMarkdownFile(filePath string, messages []entities.Message, date string, parentDate time.Time) error {
 	// Build markdown content
 	var content strings.Builder
 
@@ -97,7 +97,7 @@ func (r *FileRepositoryImpl) writeMarkdownFile(filePath string, messages []entit
 }
 
 // writeMessage writes a single message and its thread replies
-func (r *FileRepositoryImpl) writeMessage(buf *strings.Builder, msg entities.Message, parentDate time.Time) {
+func (r *Repository) writeMessage(buf *strings.Builder, msg entities.Message, parentDate time.Time) {
 	// Write parent message with display name
 	timestamp := msg.Timestamp.Format("15:04")
 	buf.WriteString(fmt.Sprintf("### %s %s\n%s\n\n", timestamp, msg.UserDisplayName, msg.Text))
@@ -109,7 +109,7 @@ func (r *FileRepositoryImpl) writeMessage(buf *strings.Builder, msg entities.Mes
 }
 
 // writeThreadReply writes a thread reply message
-func (r *FileRepositoryImpl) writeThreadReply(buf *strings.Builder, reply entities.Message, parentTime time.Time) {
+func (r *Repository) writeThreadReply(buf *strings.Builder, reply entities.Message, parentTime time.Time) {
 	// Check if reply is on the same day as parent
 	sameDay := r.isSameDay(reply.Timestamp, parentTime)
 
@@ -126,21 +126,21 @@ func (r *FileRepositoryImpl) writeThreadReply(buf *strings.Builder, reply entiti
 }
 
 // isSameDay checks if two timestamps are on the same day
-func (r *FileRepositoryImpl) isSameDay(t1, t2 time.Time) bool {
+func (r *Repository) isSameDay(t1, t2 time.Time) bool {
 	y1, m1, d1 := t1.Date()
 	y2, m2, d2 := t2.Date()
 	return y1 == y2 && m1 == m2 && d1 == d2
 }
 
 // sanitizeChannelName sanitizes a channel name for use as a directory name
-func (r *FileRepositoryImpl) sanitizeChannelName(name string) string {
+func (r *Repository) sanitizeChannelName(name string) string {
 	// Replace any character that's not alphanumeric, hyphen, or underscore with underscore
 	re := regexp.MustCompile(`[^a-zA-Z0-9\-_]`)
 	return re.ReplaceAllString(name, "_")
 }
 
 // getSortedDates returns a sorted slice of date strings from the map
-func (r *FileRepositoryImpl) getSortedDates(messagesByDate map[string][]entities.Message) []string {
+func (r *Repository) getSortedDates(messagesByDate map[string][]entities.Message) []string {
 	dates := make([]string, 0, len(messagesByDate))
 	for date := range messagesByDate {
 		dates = append(dates, date)
@@ -153,7 +153,7 @@ func (r *FileRepositoryImpl) getSortedDates(messagesByDate map[string][]entities
 }
 
 // sortDates sorts date strings in chronological order
-func (r *FileRepositoryImpl) sortDates(dates []string) {
+func (r *Repository) sortDates(dates []string) {
 	// Simple bubble sort since we likely don't have many dates
 	for i := 0; i < len(dates); i++ {
 		for j := i + 1; j < len(dates); j++ {

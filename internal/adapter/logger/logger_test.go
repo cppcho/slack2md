@@ -23,7 +23,7 @@ func captureOutput(f func()) string {
 	return buf.String()
 }
 
-func TestLoggerImpl_Info(t *testing.T) {
+func TestLogger_Info(t *testing.T) {
 	logger := NewLogger(INFO)
 	output := captureOutput(func() {
 		logger.Info("test message %s", "arg")
@@ -34,7 +34,7 @@ func TestLoggerImpl_Info(t *testing.T) {
 	}
 }
 
-func TestLoggerImpl_InfoWithHigherLevel(t *testing.T) {
+func TestLogger_InfoWithHigherLevel(t *testing.T) {
 	logger := NewLogger(ERROR)
 	output := captureOutput(func() {
 		logger.Info("test message")
@@ -45,7 +45,7 @@ func TestLoggerImpl_InfoWithHigherLevel(t *testing.T) {
 	}
 }
 
-func TestLoggerImpl_Error(t *testing.T) {
+func TestLogger_Error(t *testing.T) {
 	logger := NewLogger(ERROR)
 	output := captureOutput(func() {
 		logger.Error("error message %d", 123)
@@ -56,7 +56,7 @@ func TestLoggerImpl_Error(t *testing.T) {
 	}
 }
 
-func TestLoggerImpl_Debug(t *testing.T) {
+func TestLogger_Debug(t *testing.T) {
 	logger := NewLogger(DEBUG)
 	output := captureOutput(func() {
 		logger.Debug("debug message")
@@ -67,7 +67,7 @@ func TestLoggerImpl_Debug(t *testing.T) {
 	}
 }
 
-func TestLoggerImpl_Warn(t *testing.T) {
+func TestLogger_Warn(t *testing.T) {
 	logger := NewLogger(WARN)
 	output := captureOutput(func() {
 		logger.Warn("warning message")

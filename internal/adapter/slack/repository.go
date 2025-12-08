@@ -11,21 +11,21 @@ import (
 	slackapi "github.com/slack-go/slack"
 )
 
-// SlackRepositoryImpl implements the SlackRepository interface
-type SlackRepositoryImpl struct {
-	client    SlackClient
+// Repository implements the interfaces.SlackRepository interface
+type Repository struct {
+	client    Client
 	formatter *MarkdownFormatter
 	logger    interfaces.Logger
 	userCache *UserCache
 }
 
-// NewSlackRepository creates a new SlackRepositoryImpl
+// NewSlackRepository creates a new Repository
 func NewSlackRepository(
-	client SlackClient,
+	client Client,
 	logger interfaces.Logger,
 	userCache *UserCache,
-) *SlackRepositoryImpl {
-	return &SlackRepositoryImpl{
+) *Repository {
+	return &Repository{
 		client:    client,
 		formatter: NewMarkdownFormatter(), // Created internally, not injected
 		logger:    logger,
@@ -34,7 +34,7 @@ func NewSlackRepository(
 }
 
 // FetchAllChannels fetches all channels where the bot is a member
-func (r *SlackRepositoryImpl) FetchAllChannels(ctx context.Context) ([]entities.Channel, error) {
+func (r *Repository) FetchAllChannels(ctx context.Context) ([]entities.Channel, error) {
 	r.logger.Info("Fetching channels for user")
 
 	var allChannels []entities.Channel
@@ -79,7 +79,7 @@ func (r *SlackRepositoryImpl) FetchAllChannels(ctx context.Context) ([]entities.
 }
 
 // FetchChannelMessages fetches all messages from a channel within the specified time range
-func (r *SlackRepositoryImpl) FetchChannelMessages(ctx context.Context, channelID string, timeRange valueobjects.TimeRange) ([]entities.Message, error) {
+func (r *Repository) FetchChannelMessages(ctx context.Context, channelID string, timeRange valueobjects.TimeRange) ([]entities.Message, error) {
 	r.logger.Info("Fetching messages for channel %s", channelID)
 
 	var allMessages []entities.Message
@@ -158,7 +158,7 @@ func (r *SlackRepositoryImpl) FetchChannelMessages(ctx context.Context, channelI
 }
 
 // GetUserDisplayName fetches user display name with caching
-func (r *SlackRepositoryImpl) GetUserDisplayName(ctx context.Context, userID string) (string, error) {
+func (r *Repository) GetUserDisplayName(ctx context.Context, userID string) (string, error) {
 	// Check cache first
 	if displayName, ok := r.userCache.Get(userID); ok {
 		return displayName, nil
@@ -194,7 +194,7 @@ func (r *SlackRepositoryImpl) GetUserDisplayName(ctx context.Context, userID str
 }
 
 // fetchThreadReplies fetches all replies in a thread
-func (r *SlackRepositoryImpl) fetchThreadReplies(ctx context.Context, channelID, threadTS string) ([]entities.Message, error) {
+func (r *Repository) fetchThreadReplies(ctx context.Context, channelID, threadTS string) ([]entities.Message, error) {
 	r.logger.Debug("Fetching thread replies for message %s in channel %s", threadTS, channelID)
 
 	params := &slackapi.GetConversationRepliesParameters{
@@ -248,7 +248,7 @@ func (r *SlackRepositoryImpl) fetchThreadReplies(ctx context.Context, channelID,
 
 // parseSlackTimestamp converts Slack's timestamp format to time.Time
 // Slack timestamps are Unix timestamps with microseconds (e.g., "1234567890.123456")
-func (r *SlackRepositoryImpl) parseSlackTimestamp(ts string) (time.Time, error) {
+func (r *Repository) parseSlackTimestamp(ts string) (time.Time, error) {
 	var sec, nsec int64
 	_, err := fmt.Sscanf(ts, "%d.%d", &sec, &nsec)
 	if err != nil {

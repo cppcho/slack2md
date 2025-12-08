@@ -2,8 +2,8 @@ package slack
 
 import "testing"
 
-func TestNewSlackClient(t *testing.T) {
-	client := NewSlackClient("xoxb-test-token", "xapp-test-token")
+func TestNewClient(t *testing.T) {
+	client := NewClient("xoxb-test-token", "xapp-test-token")
 	if client == nil {
 		t.Error("Expected client to be created")
 	}
@@ -12,8 +12,8 @@ func TestNewSlackClient(t *testing.T) {
 	}
 }
 
-func TestNewSlackClient_WithoutAppToken(t *testing.T) {
-	client := NewSlackClient("xoxb-test-token", "")
+func TestNewClient_WithoutAppToken(t *testing.T) {
+	client := NewClient("xoxb-test-token", "")
 	if client == nil {
 		t.Error("Expected client to be created")
 	}

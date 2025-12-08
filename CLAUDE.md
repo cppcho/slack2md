@@ -181,10 +181,11 @@ Application business rules that orchestrate the export process.
 Interface adapters that handle external integrations and convert between use cases and external interfaces. Organized by domain for cohesion.
 
 **Slack Domain (`adapter/slack/`):**
-- `SlackClient`: Wraps slack-go/slack library with interface
+- `Client`: Interface for Slack API operations
+- `APIClient`: Wraps slack-go/slack library
 - `UserCache`: Thread-safe cache for user display names
-- `SlackRepositoryImpl`: Implements Slack data fetching
-  - Uses SlackClient for API calls
+- `Repository`: Implements interfaces.SlackRepository
+  - Uses Client interface for API calls
   - Creates MarkdownFormatter internally (selective DI)
   - Handles pagination, threads, user display name caching
   - Converts Slack messages to domain entities
@@ -194,8 +195,9 @@ Interface adapters that handle external integrations and convert between use cas
   - Converts bullet points
 
 **Filesystem Domain (`adapter/filesystem/`):**
-- `FileWriter`: Wraps os.WriteFile and os.MkdirAll with interface
-- `FileRepositoryImpl`: Implements file writing
+- `FileWriter`: Interface for file system operations
+- `Writer`: Wraps os.WriteFile and os.MkdirAll
+- `Repository`: Implements interfaces.FileRepository
   - Uses FileWriter for file operations
   - Organizes files by date
   - Formats markdown with proper headers
@@ -208,7 +210,7 @@ Interface adapters that handle external integrations and convert between use cas
   - Range validation (DaysBack 0-365)
 
 **Logger (`adapter/logger/`):**
-- `LoggerImpl`: stdout logger with log levels (DEBUG, INFO, WARN, ERROR)
+- `Logger`: Implements interfaces.Logger with stdout output and log levels (DEBUG, INFO, WARN, ERROR)
 
 **Presenter (`adapter/presenter/`):**
 - `ConsolePresenter`: CLI output formatting
